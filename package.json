@@ -1,17 +1,17 @@
 {
   "name": "videohub",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
-  "description": "Modern VideoHub - Video Upload, Streaming, Download, Likes, Comments and Admin",
+  "description": "Modern VideoHub - upload, streaming, download, likes, comments and admin dashboard",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
+    "@aws-sdk/s3-request-presigner": "^3.879.0",
     "bcryptjs": "^3.0.2",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.2",
     "pg": "^8.16.3"
   }
 }

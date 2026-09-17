@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Login - VideoHub</title>
+
+  <link rel="stylesheet" href="/css/style.css">
+
+  <style>
+    .auth-page {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      place-items: center;
+      padding: 40px 16px;
+    }
+
+    .auth-card {
+      width: min(430px, 100%);
+      padding: 34px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,.3);
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .auth-logo .logo {
+      justify-content: center;
+    }
+
+    .auth-card h1 {
+      text-align: center;
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .auth-subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 17px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      height: 50px;
+      padding: 0 14px;
+      background: #0b1019;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      color: white;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: var(--primary);
+    }
+
+    .auth-submit {
+      width: 100%;
+      height: 50px;
+      border: 0;
+      border-radius: 11px;
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+      margin-top: 5px;
+    }
+
+    .auth-submit:hover {
+      background: var(--primary-dark);
+    }
+
+    .auth-message {
+      display: none;
+      padding: 12px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .auth-message.error {
+      display: block;
+      background: rgba(255,23,68,.1);
+      color: #ff6b87;
+      border: 1px solid rgba(255,23,68,.2);
+    }
+
+    .auth-message.success {
+      display: block;
+      background: rgba(0,200,83,.1);
+      color: #69e69a;
+      border: 1px solid rgba(0,200,83,.2);
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .auth-footer a {
+      color: #ff5575;
+      font-weight: 700;
+    }
+
+    .back-home {
+      display: block;
+      text-align: center;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .back-home:hover {
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="header">
+
+  <div class="container nav">
+
+    <a href="/" class="logo">
+      <span class="logo-icon">▶</span>
+      <span>Video<span>Hub</span></span>
+    </a>
+
+    <a href="/" class="login-btn">
+      ← Home
+    </a>
+
+  </div>
+
+</header>
+
+
+<main class="auth-page">
+
+  <div class="auth-card">
+
+    <div class="auth-logo">
+
+      <a href="/" class="logo">
+        <span class="logo-icon">▶</span>
+        <span>Video<span>Hub</span></span>
+      </a>
+
+    </div>
+
+    <h1>Welcome Back</h1>
+
+    <p class="auth-subtitle">
+      Login to your VideoHub account
+    </p>
+
+    <div
+      id="message"
+      class="auth-message"
+    ></div>
+
+    <form id="loginForm">
+
+      <div class="form-group">
+
+        <label for="email">
+          Email
+        </label>
+
+        <input
+          type="email"
+          id="email"
+          placeholder="you@example.com"
+          required
+          autocomplete="email"
+        >
+
+      </div>
+
+      <div class="form-group">
+
+        <label for="password">
+          Password
+        </label>
+
+        <input
+          type="password"
+          id="password"
+          placeholder="Enter your password"
+          required
+          autocomplete="current-password"
+        >
+
+      </div>
+
+      <button
+        type="submit"
+        class="auth-submit"
+        id="submitButton"
+      >
+        Login
+      </button>
+
+    </form>
+
+    <div class="auth-footer">
+
+      Don't have an account?
+
+      <a href="/register.html">
+        Create Account
+      </a>
+
+    </div>
+
+    <a
+      href="/"
+      class="back-home"
+    >
+      ← Back to VideoHub
+    </a>
+
+  </div>
+
+</main>
+
+
+<script>
+
+const form =
+  document.getElementById("loginForm");
+
+const message =
+  document.getElementById("message");
+
+const button =
+  document.getElementById("submitButton");
+
+
+function showMessage(text, type) {
+
+  message.textContent = text;
+
+  message.className =
+    "auth-message " + type;
+
+}
+
+
+form.addEventListener(
+  "submit",
+  async function(event) {
+
+    event.preventDefault();
+
+    const email =
+      document.getElementById("email")
+        .value
+        .trim();
+
+    const password =
+      document.getElementById("password")
+        .value;
+
+    button.disabled = true;
+
+    button.textContent =
+      "Logging in...";
+
+    message.className =
+      "auth-message";
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/auth/login",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              email,
+              password
+            })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok || !data.success) {
+
+        throw new Error(
+          data.message ||
+          "Login failed."
+        );
+
+      }
+
+      localStorage.setItem(
+        "videohub_token",
+        data.token
+      );
+
+      localStorage.setItem(
+        "videohub_user",
+        JSON.stringify(data.user)
+      );
+
+      showMessage(
+        "Login successful. Redirecting...",
+        "success"
+      );
+
+      setTimeout(
+        () => {
+          window.location.href = "/";
+        },
+        700
+      );
+
+    } catch (error) {
+
+      showMessage(
+        error.message,
+        "error"
+      );
+
+      button.disabled = false;
+
+      button.textContent =
+        "Login";
+
+    }
+
+  }
+);
+
+</script>
+
+</body>
+  </html>

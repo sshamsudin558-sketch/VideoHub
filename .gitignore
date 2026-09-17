@@ -1,1 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
 
+tmp/
+uploads/
+data/
+
+*.log
+
+.DS_Store
+Thumbs.db

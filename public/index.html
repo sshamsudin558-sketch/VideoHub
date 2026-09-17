@@ -6,109 +6,611 @@
 <title>Modern Video Hub</title>
 <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
+
 <header class="topbar">
-  <div class="brand"><span class="logo">▶</span><span>VideoHub</span></div>
-  <button class="uploadBtn" onclick="openUpload()">＋ Upload Video</button>
+  <div class="brand">
+    <span class="logo">▶</span>
+    <span>VideoHub</span>
+  </div>
+
+  <button class="uploadBtn" onclick="openUpload()">
+    ＋ Upload Video
+  </button>
 </header>
 
 <main>
-  <section class="hero">
-    <div>
-      <p class="eyebrow">YOUR PERSONAL VIDEO PLATFORM</p>
-      <h1>Store. Watch.<br><span>Share your videos.</span></h1>
-      <p class="sub">A clean modern video hub for uploading and streaming your own video library.</p>
-      <button class="primary" onclick="openUpload()">Upload a video</button>
-    </div>
-    <div class="heroCard"><div class="play">▶</div><p>HD VIDEO LIBRARY</p></div>
-  </section>
 
-  <section class="library">
-    <div class="sectionHead">
-      <div><h2>Your Library</h2><p id="count">Loading videos...</p></div>
-      <button class="refresh" onclick="loadVideos()">↻ Refresh</button>
+<section class="hero">
+  <div>
+    <p class="eyebrow">YOUR PERSONAL VIDEO PLATFORM</p>
+
+    <h1>
+      Store. Watch.<br>
+      <span>Share your videos.</span>
+    </h1>
+
+    <p class="sub">
+      A clean modern video hub for uploading and streaming your own video library.
+    </p>
+
+    <button class="primary" onclick="openUpload()">
+      Upload a video
+    </button>
+  </div>
+
+  <div class="heroCard">
+    <div class="play">▶</div>
+    <p>HD VIDEO LIBRARY</p>
+  </div>
+</section>
+
+
+<section class="library">
+
+  <div class="sectionHead">
+    <div>
+      <h2>Your Library</h2>
+      <p id="count">Loading videos...</p>
     </div>
-    <div id="grid" class="grid"></div>
-  </section>
+
+    <button class="refresh" onclick="loadVideos()">
+      ↻ Refresh
+    </button>
+  </div>
+
+  <div id="grid" class="grid"></div>
+
+</section>
+
 </main>
 
+
 <div id="modal" class="modal hidden">
+
   <div class="dialog">
+
     <button class="close" onclick="closeUpload()">×</button>
+
     <h2>Upload video</h2>
-    <p>Choose an MP4, WebM, OGG, MOV or M4V video.</p>
+
+    <p>
+      Choose an MP4, WebM, OGG, MOV or M4V video.
+    </p>
+
     <form id="uploadForm">
+
       <label class="drop">
-        <input id="video" name="video" type="file" accept="video/*" required>
+
+        <input
+          id="video"
+          name="video"
+          type="file"
+          accept="video/*"
+          required
+        >
+
         <strong>Choose video</strong>
-        <span id="fileName">No file selected</span>
+
+        <span id="fileName">
+          No file selected
+        </span>
+
       </label>
-      <button class="primary full" type="submit">Start upload</button>
+
+      <button
+        class="primary full"
+        id="uploadButton"
+        type="submit"
+      >
+        Start upload
+      </button>
+
     </form>
+
+
+    <div id="uploadProgress" class="uploadProgress hidden">
+
+      <div class="progressTop">
+        <strong id="progressText">
+          Uploading...
+        </strong>
+
+        <strong id="progressPercent">
+          0%
+        </strong>
+      </div>
+
+      <div class="progressBar">
+        <div
+          id="progressFill"
+          class="progressFill"
+          style="width:0%"
+        ></div>
+      </div>
+
+      <div class="progressInfo">
+
+        <span id="progressSize">
+          0 MB / 0 MB
+        </span>
+
+        <span id="progressSpeed">
+          0 MB/s
+        </span>
+
+      </div>
+
+      <button
+        type="button"
+        id="cancelUpload"
+        class="cancelBtn"
+      >
+        Cancel upload
+      </button>
+
+    </div>
+
+
     <div id="status"></div>
+
   </div>
+
 </div>
 
+
 <script>
+
 const grid = document.getElementById("grid");
 const count = document.getElementById("count");
+
 const modal = document.getElementById("modal");
+
 const input = document.getElementById("video");
+
 const fileName = document.getElementById("fileName");
+
 const statusBox = document.getElementById("status");
 
-function openUpload(){ modal.classList.remove("hidden"); }
-function closeUpload(){ modal.classList.add("hidden"); statusBox.textContent=""; }
+const uploadForm = document.getElementById("uploadForm");
+
+const uploadButton = document.getElementById("uploadButton");
+
+const uploadProgress =
+  document.getElementById("uploadProgress");
+
+const progressFill =
+  document.getElementById("progressFill");
+
+const progressPercent =
+  document.getElementById("progressPercent");
+
+const progressText =
+  document.getElementById("progressText");
+
+const progressSize =
+  document.getElementById("progressSize");
+
+const progressSpeed =
+  document.getElementById("progressSpeed");
+
+const cancelUpload =
+  document.getElementById("cancelUpload");
+
+
+let currentXHR = null;
+
+
+function openUpload(){
+
+  modal.classList.remove("hidden");
+
+}
+
+
+function closeUpload(){
+
+  if(currentXHR){
+
+    currentXHR.abort();
+
+    currentXHR = null;
+
+  }
+
+  modal.classList.add("hidden");
+
+  resetUpload();
+
+}
+
+
+function resetUpload(){
+
+  uploadProgress.classList.add("hidden");
+
+  progressFill.style.width = "0%";
+
+  progressPercent.textContent = "0%";
+
+  progressText.textContent = "Uploading...";
+
+  progressSize.textContent = "0 MB / 0 MB";
+
+  progressSpeed.textContent = "0 MB/s";
+
+  statusBox.textContent = "";
+
+  uploadButton.disabled = false;
+
+  uploadButton.textContent = "Start upload";
+
+}
+
 
 input.addEventListener("change", () => {
-  fileName.textContent = input.files[0]?.name || "No file selected";
+
+  const file = input.files[0];
+
+  fileName.textContent =
+    file ? file.name : "No file selected";
+
 });
+
 
 function formatSize(bytes){
-  const units=["B","KB","MB","GB","TB"];
-  let i=0,n=bytes;
-  while(n>=1024 && i<units.length-1){n/=1024;i++;}
-  return `${n.toFixed(i?1:0)} ${units[i]}`;
+
+  const units = [
+    "B",
+    "KB",
+    "MB",
+    "GB",
+    "TB"
+  ];
+
+  let i = 0;
+
+  let number = bytes;
+
+  while(
+    number >= 1024 &&
+    i < units.length - 1
+  ){
+
+    number /= 1024;
+
+    i++;
+
+  }
+
+  return `${number.toFixed(i ? 1 : 0)} ${units[i]}`;
+
 }
+
 
 async function loadVideos(){
-  const res = await fetch("/api/videos");
-  const videos = await res.json();
-  count.textContent = `${videos.length} video${videos.length===1?"":"s"} in your library`;
-  if(!videos.length){
-    grid.innerHTML = `<div class="empty"><div>▶</div><h3>Your library is empty</h3><p>Upload your first video to get started.</p></div>`;
-    return;
+
+  try{
+
+    const res =
+      await fetch("/api/videos");
+
+    const videos =
+      await res.json();
+
+    count.textContent =
+      `${videos.length} video${videos.length === 1 ? "" : "s"} in your library`;
+
+    if(!videos.length){
+
+      grid.innerHTML = `
+        <div class="empty">
+
+          <div>▶</div>
+
+          <h3>Your library is empty</h3>
+
+          <p>
+            Upload your first video to get started.
+          </p>
+
+        </div>
+      `;
+
+      return;
+
+    }
+
+
+    grid.innerHTML =
+      videos.map(v => `
+
+        <article class="card">
+
+          <video
+            controls
+            preload="metadata"
+            src="${v.url}">
+          </video>
+
+          <div class="meta">
+
+            <h3 title="${v.name}">
+              ${v.name}
+            </h3>
+
+            <p>
+              ${formatSize(v.size)}
+            </p>
+
+          </div>
+
+        </article>
+
+      `).join("");
+
   }
-  grid.innerHTML = videos.map(v => `
-    <article class="card">
-      <video controls preload="metadata" src="${v.url}"></video>
-      <div class="meta">
-        <h3 title="${v.name}">${v.name}</h3>
-        <p>${formatSize(v.size)}</p>
-      </div>
-    </article>`).join("");
+
+  catch(error){
+
+    count.textContent =
+      "Unable to load videos.";
+
+  }
+
 }
 
-document.getElementById("uploadForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  if(!input.files[0]) return;
-  statusBox.textContent = "Uploading... Please keep this page open.";
-  const data = new FormData(e.target);
-  try {
-    const res = await fetch("/api/upload", {method:"POST", body:data});
-    const json = await res.json();
-    if(!res.ok) throw new Error(json.error || "Upload failed");
-    statusBox.textContent = "Upload complete.";
-    e.target.reset();
-    fileName.textContent = "No file selected";
-    await loadVideos();
-    setTimeout(closeUpload, 700);
-  } catch(err) {
-    statusBox.textContent = err.message;
+
+uploadForm.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+    const file =
+      input.files[0];
+
+    if(!file){
+
+      statusBox.textContent =
+        "Please select a video first.";
+
+      return;
+
+    }
+
+
+    uploadButton.disabled = true;
+
+    uploadButton.textContent =
+      "Uploading...";
+
+
+    uploadProgress.classList.remove(
+      "hidden"
+    );
+
+    statusBox.textContent = "";
+
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "video",
+      file
+    );
+
+
+    const xhr =
+      new XMLHttpRequest();
+
+    currentXHR = xhr;
+
+
+    let startTime =
+      Date.now();
+
+
+    xhr.open(
+      "POST",
+      "/api/upload",
+      true
+    );
+
+
+    xhr.upload.onprogress =
+      function(event){
+
+        if(!event.lengthComputable)
+          return;
+
+
+        const percent =
+          Math.round(
+            (event.loaded / event.total) * 100
+          );
+
+
+        progressFill.style.width =
+          percent + "%";
+
+
+        progressPercent.textContent =
+          percent + "%";
+
+
+        progressText.textContent =
+          percent >= 100
+            ? "Processing video..."
+            : "Uploading video...";
+
+
+        progressSize.textContent =
+          `${formatSize(event.loaded)} / ${formatSize(event.total)}`;
+
+
+        const elapsed =
+          (Date.now() - startTime) / 1000;
+
+
+        if(elapsed > 0){
+
+          const speed =
+            event.loaded / elapsed;
+
+          progressSpeed.textContent =
+            `${formatSize(speed)}/s`;
+
+        }
+
+      };
+
+
+    xhr.onload =
+      async function(){
+
+        currentXHR = null;
+
+
+        if(
+          xhr.status >= 200 &&
+          xhr.status < 300
+        ){
+
+          progressFill.style.width =
+            "100%";
+
+          progressPercent.textContent =
+            "100%";
+
+          progressText.textContent =
+            "Upload complete ✓";
+
+
+          progressSize.textContent =
+            `${formatSize(file.size)} / ${formatSize(file.size)}`;
+
+
+          progressSpeed.textContent =
+            "Complete";
+
+
+          statusBox.textContent =
+            "Video uploaded successfully.";
+
+
+          uploadButton.disabled =
+            false;
+
+
+          uploadButton.textContent =
+            "Start upload";
+
+
+          uploadForm.reset();
+
+          fileName.textContent =
+            "No file selected";
+
+
+          await loadVideos();
+
+        }
+
+        else{
+
+          let message =
+            "Upload failed.";
+
+          try{
+
+            const json =
+              JSON.parse(xhr.responseText);
+
+            message =
+              json.error || message;
+
+          }
+          catch(error){}
+
+
+          statusBox.textContent =
+            message;
+
+
+          uploadButton.disabled =
+            false;
+
+          uploadButton.textContent =
+            "Try again";
+
+        }
+
+      };
+
+
+    xhr.onerror =
+      function(){
+
+        currentXHR = null;
+
+        statusBox.textContent =
+          "Network error. Please try again.";
+
+        uploadButton.disabled =
+          false;
+
+        uploadButton.textContent =
+          "Try again";
+
+      };
+
+
+    xhr.onabort =
+      function(){
+
+        currentXHR = null;
+
+        progressText.textContent =
+          "Upload cancelled";
+
+        statusBox.textContent =
+          "Upload cancelled.";
+
+        uploadButton.disabled =
+          false;
+
+        uploadButton.textContent =
+          "Start upload";
+
+      };
+
+
+    xhr.send(formData);
+
   }
-});
+);
+
+
+cancelUpload.addEventListener(
+  "click",
+  () => {
+
+    if(currentXHR){
+
+      currentXHR.abort();
+
+    }
+
+  }
+);
+
 
 loadVideos();
+
 </script>
+
 </body>
-  </html>
+                                </html>

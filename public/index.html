@@ -1,265 +1,676 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Modern Video Hub</title>
-<link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="VideoHub modern video platform"
+  >
+
+  <title>VideoHub</title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  >
 </head>
 
 <body>
 
-<header class="topbar">
-  <div class="brand">
-    <span class="logo">▶</span>
-    <span>VideoHub</span>
-  </div>
+  <header class="header">
 
-  <button class="uploadBtn" onclick="openUpload()">
-    ＋ Upload Video
-  </button>
-</header>
+    <div class="container headerInner">
 
-<main>
+      <a
+        href="/"
+        class="logo"
+      >
+        <span class="logoIcon">▶</span>
+        <span>VideoHub</span>
+      </a>
 
-<section class="hero">
-  <div>
-    <p class="eyebrow">YOUR PERSONAL VIDEO PLATFORM</p>
+      <div class="headerActions">
 
-    <h1>
-      Store. Watch.<br>
-      <span>Share your videos.</span>
-    </h1>
+        <button
+          id="adminButton"
+          class="headerButton"
+        >
+          Admin Login
+        </button>
 
-    <p class="sub">
-      A clean modern video hub for uploading and streaming your own video library.
-    </p>
+        <button
+          id="uploadButton"
+          class="primaryButton hidden"
+        >
+          + Upload Video
+        </button>
 
-    <button class="primary" onclick="openUpload()">
-      Upload a video
-    </button>
-  </div>
+      </div>
 
-  <div class="heroCard">
-    <div class="play">▶</div>
-    <p>HD VIDEO LIBRARY</p>
-  </div>
-</section>
-
-
-<section class="library">
-
-  <div class="sectionHead">
-    <div>
-      <h2>Your Library</h2>
-      <p id="count">Loading videos...</p>
     </div>
 
-    <button class="refresh" onclick="loadVideos()">
-      ↻ Refresh
-    </button>
-  </div>
-
-  <div id="grid" class="grid"></div>
-
-</section>
-
-</main>
+  </header>
 
 
-<div id="modal" class="modal hidden">
+  <main>
 
-  <div class="dialog">
+    <section class="hero">
 
-    <button class="close" onclick="closeUpload()">×</button>
+      <div class="container heroContent">
 
-    <h2>Upload video</h2>
+        <div class="heroBadge">
+          Modern Video Platform
+        </div>
 
-    <p>
-      Choose an MP4, WebM, OGG, MOV or M4V video.
-    </p>
+        <h1>
+          Your videos.
+          <span>One beautiful place.</span>
+        </h1>
 
-    <form id="uploadForm">
+        <p>
+          Upload, watch, share and manage your videos
+          with a clean modern experience.
+        </p>
 
-      <label class="drop">
+        <div class="heroButtons">
+
+          <button
+            id="heroUploadButton"
+            class="primaryButton hidden"
+          >
+            Upload Video
+          </button>
+
+          <a
+            href="#library"
+            class="secondaryButton"
+          >
+            Browse Videos
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section
+      id="library"
+      class="librarySection"
+    >
+
+      <div class="container">
+
+        <div class="sectionHeader">
+
+          <div>
+
+            <div class="sectionLabel">
+              VIDEO LIBRARY
+            </div>
+
+            <h2>
+              Latest Videos
+            </h2>
+
+          </div>
+
+          <div
+            id="videoCount"
+            class="videoCount"
+          >
+            0 videos
+          </div>
+
+        </div>
+
+
+        <div class="searchBox">
+
+          <span class="searchIcon">
+            🔎
+          </span>
+
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search videos..."
+            autocomplete="off"
+          >
+
+        </div>
+
+
+        <div
+          id="loading"
+          class="loading"
+        >
+          Loading videos...
+        </div>
+
+
+        <div
+          id="videoGrid"
+          class="videoGrid"
+        ></div>
+
+
+        <div
+          id="emptyState"
+          class="emptyState hidden"
+        >
+
+          <div class="emptyIcon">
+            🎬
+          </div>
+
+          <h3>
+            No videos yet
+          </h3>
+
+          <p>
+            Login as admin to upload your first video.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ADMIN LOGIN MODAL -->
+
+  <div
+    id="adminModal"
+    class="modal hidden"
+  >
+
+    <div class="modalOverlay"></div>
+
+    <div class="modalCard">
+
+      <button
+        class="modalClose"
+        data-close="adminModal"
+      >
+        ×
+      </button>
+
+      <div class="modalIcon">
+        🔐
+      </div>
+
+      <h2>
+        Admin Login
+      </h2>
+
+      <p class="modalDescription">
+        Only the administrator can upload and manage videos.
+      </p>
+
+      <form id="adminForm">
+
+        <label>
+          Admin Password
+        </label>
 
         <input
-          id="video"
-          name="video"
-          type="file"
-          accept="video/*"
+          id="adminPassword"
+          type="password"
+          placeholder="Enter password"
           required
         >
 
-        <strong>Choose video</strong>
+        <button
+          type="submit"
+          class="primaryButton fullButton"
+        >
+          Login
+        </button>
 
-        <span id="fileName">
-          No file selected
-        </span>
-
-      </label>
-
-      <button
-        class="primary full"
-        id="uploadButton"
-        type="submit"
-      >
-        Start upload
-      </button>
-
-    </form>
-
-
-    <div id="uploadProgress" class="uploadProgress hidden">
-
-      <div class="progressTop">
-        <strong id="progressText">
-          Uploading...
-        </strong>
-
-        <strong id="progressPercent">
-          0%
-        </strong>
-      </div>
-
-      <div class="progressBar">
         <div
-          id="progressFill"
-          class="progressFill"
-          style="width:0%"
+          id="adminMessage"
+          class="formMessage"
         ></div>
-      </div>
 
-      <div class="progressInfo">
-
-        <span id="progressSize">
-          0 MB / 0 MB
-        </span>
-
-        <span id="progressSpeed">
-          0 MB/s
-        </span>
-
-      </div>
-
-      <button
-        type="button"
-        id="cancelUpload"
-        class="cancelBtn"
-      >
-        Cancel upload
-      </button>
+      </form>
 
     </div>
 
+  </div>
 
-    <div id="status"></div>
+
+  <!-- UPLOAD MODAL -->
+
+  <div
+    id="uploadModal"
+    class="modal hidden"
+  >
+
+    <div class="modalOverlay"></div>
+
+    <div class="modalCard uploadModalCard">
+
+      <button
+        class="modalClose"
+        data-close="uploadModal"
+      >
+        ×
+      </button>
+
+      <div class="modalIcon">
+        📤
+      </div>
+
+      <h2>
+        Upload Video
+      </h2>
+
+      <p class="modalDescription">
+        Upload a video to your VideoHub library.
+      </p>
+
+
+      <form id="uploadForm">
+
+        <label>
+          Video Title
+        </label>
+
+        <input
+          id="videoTitle"
+          type="text"
+          maxlength="200"
+          placeholder="Enter video title"
+        >
+
+
+        <label>
+          Description
+        </label>
+
+        <textarea
+          id="videoDescription"
+          maxlength="3000"
+          placeholder="Write a short description..."
+        ></textarea>
+
+
+        <label>
+          Video File
+        </label>
+
+        <input
+          id="videoFile"
+          type="file"
+          accept="video/*,.mp4,.webm,.ogg,.mov,.m4v,.avi,.mkv"
+          required
+        >
+
+
+        <div
+          id="selectedFile"
+          class="selectedFile hidden"
+        ></div>
+
+
+        <div
+          id="uploadProgressArea"
+          class="uploadProgressArea hidden"
+        >
+
+          <div class="progressTop">
+
+            <strong>
+              Uploading...
+            </strong>
+
+            <span id="progressPercent">
+              0%
+            </span>
+
+          </div>
+
+
+          <div class="progressBar">
+
+            <div
+              id="progressBarFill"
+              class="progressBarFill"
+            ></div>
+
+          </div>
+
+
+          <div class="progressInfo">
+
+            <span id="uploadedSize">
+              0 MB / 0 MB
+            </span>
+
+            <span id="uploadSpeed">
+              0 MB/s
+            </span>
+
+          </div>
+
+
+          <div
+            id="uploadStatus"
+            class="uploadStatus"
+          >
+            Preparing upload...
+          </div>
+
+        </div>
+
+
+        <div class="uploadButtons">
+
+          <button
+            type="button"
+            id="cancelUpload"
+            class="secondaryButton hidden"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            id="startUpload"
+            class="primaryButton"
+          >
+            Upload Video
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
 
   </div>
 
-</div>
+
+  <!-- VIDEO MODAL -->
+
+  <div
+    id="videoModal"
+    class="modal videoModal hidden"
+  >
+
+    <div class="modalOverlay"></div>
+
+    <div class="videoModalCard">
+
+      <button
+        class="modalClose videoClose"
+        data-close="videoModal"
+      >
+        ×
+      </button>
+
+      <div class="largeVideoWrapper">
+
+        <video
+          id="largeVideo"
+          controls
+          playsinline
+          preload="metadata"
+        ></video>
+
+      </div>
+
+
+      <div class="videoDetails">
+
+        <h2 id="largeVideoTitle">
+          Video
+        </h2>
+
+        <div
+          id="largeVideoStats"
+          class="largeVideoStats"
+        ></div>
+
+        <p
+          id="largeVideoDescription"
+          class="largeVideoDescription"
+        ></p>
+
+
+        <div class="videoActions largeActions">
+
+          <button
+            id="largeLikeButton"
+            class="actionButton"
+          >
+            ❤️ Like
+            <span id="largeLikeCount">
+              0
+            </span>
+          </button>
+
+          <button
+            id="largeShareButton"
+            class="actionButton"
+          >
+            🔗 Share
+          </button>
+
+          <a
+            id="largeDownloadButton"
+            class="actionButton"
+            href="#"
+          >
+            ⬇️ Download
+          </a>
+
+        </div>
+
+
+        <div class="commentsSection">
+
+          <h3>
+            Comments
+          </h3>
+
+
+          <form
+            id="commentForm"
+            class="commentForm"
+          >
+
+            <input
+              id="commentName"
+              type="text"
+              maxlength="80"
+              placeholder="Your name"
+            >
+
+            <input
+              id="commentText"
+              type="text"
+              maxlength="1000"
+              placeholder="Write a comment..."
+              required
+            >
+
+            <button
+              type="submit"
+              class="primaryButton"
+            >
+              Post
+            </button>
+
+          </form>
+
+
+          <div
+            id="commentList"
+            class="commentList"
+          ></div>
+
+        </div>
+
+
+        <div
+          id="adminVideoActions"
+          class="adminVideoActions hidden"
+        >
+
+          <button
+            id="editVideoButton"
+            class="secondaryButton"
+          >
+            ✏️ Edit
+          </button>
+
+          <button
+            id="deleteVideoButton"
+            class="dangerButton"
+          >
+            🗑 Delete
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- EDIT MODAL -->
+
+  <div
+    id="editModal"
+    class="modal hidden"
+  >
+
+    <div class="modalOverlay"></div>
+
+    <div class="modalCard">
+
+      <button
+        class="modalClose"
+        data-close="editModal"
+      >
+        ×
+      </button>
+
+      <div class="modalIcon">
+        ✏️
+      </div>
+
+      <h2>
+        Edit Video
+      </h2>
+
+      <form id="editForm">
+
+        <label>
+          Title
+        </label>
+
+        <input
+          id="editTitle"
+          type="text"
+          maxlength="200"
+          required
+        >
+
+        <label>
+          Description
+        </label>
+
+        <textarea
+          id="editDescription"
+          maxlength="3000"
+        ></textarea>
+
+        <button
+          type="submit"
+          class="primaryButton fullButton"
+        >
+          Save Changes
+        </button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <footer class="footer">
+
+    <div class="container footerInner">
+
+      <div>
+        <strong>VideoHub</strong>
+        <span>
+          Modern video platform
+        </span>
+      </div>
+
+      <div>
+        © 2026 VideoHub
+      </div>
+
+    </div>
+
+  </footer>
 
 
 <script>
 
-const grid = document.getElementById("grid");
-const count = document.getElementById("count");
+let videos = [];
 
-const modal = document.getElementById("modal");
+let currentVideo = null;
 
-const input = document.getElementById("video");
+let adminToken =
+  localStorage.getItem("videohub_admin_token") || "";
 
-const fileName = document.getElementById("fileName");
+let uploadRequest = null;
 
-const statusBox = document.getElementById("status");
-
-const uploadForm = document.getElementById("uploadForm");
-
-const uploadButton = document.getElementById("uploadButton");
-
-const uploadProgress =
-  document.getElementById("uploadProgress");
-
-const progressFill =
-  document.getElementById("progressFill");
-
-const progressPercent =
-  document.getElementById("progressPercent");
-
-const progressText =
-  document.getElementById("progressText");
-
-const progressSize =
-  document.getElementById("progressSize");
-
-const progressSpeed =
-  document.getElementById("progressSpeed");
-
-const cancelUpload =
-  document.getElementById("cancelUpload");
+let uploadStartTime = 0;
 
 
-let currentXHR = null;
+/*
+--------------------------------------------------
+HELPERS
+--------------------------------------------------
+*/
 
+function escapeHTML(value) {
 
-function openUpload(){
-
-  modal.classList.remove("hidden");
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
 
-function closeUpload(){
+function formatSize(bytes) {
 
-  if(currentXHR){
-
-    currentXHR.abort();
-
-    currentXHR = null;
-
+  if (!bytes) {
+    return "0 MB";
   }
-
-  modal.classList.add("hidden");
-
-  resetUpload();
-
-}
-
-
-function resetUpload(){
-
-  uploadProgress.classList.add("hidden");
-
-  progressFill.style.width = "0%";
-
-  progressPercent.textContent = "0%";
-
-  progressText.textContent = "Uploading...";
-
-  progressSize.textContent = "0 MB / 0 MB";
-
-  progressSpeed.textContent = "0 MB/s";
-
-  statusBox.textContent = "";
-
-  uploadButton.disabled = false;
-
-  uploadButton.textContent = "Start upload";
-
-}
-
-
-input.addEventListener("change", () => {
-
-  const file = input.files[0];
-
-  fileName.textContent =
-    file ? file.name : "No file selected";
-
-});
-
-
-function formatSize(bytes){
 
   const units = [
     "B",
@@ -269,338 +680,2068 @@ function formatSize(bytes){
     "TB"
   ];
 
-  let i = 0;
+  let size = bytes;
 
-  let number = bytes;
+  let index = 0;
 
-  while(
-    number >= 1024 &&
-    i < units.length - 1
-  ){
-
-    number /= 1024;
-
-    i++;
-
+  while (
+    size >= 1024 &&
+    index < units.length - 1
+  ) {
+    size /= 1024;
+    index++;
   }
 
-  return `${number.toFixed(i ? 1 : 0)} ${units[i]}`;
+  return `${size.toFixed(
+    index === 0 ? 0 : 2
+  )} ${units[index]}`;
 
 }
 
 
-async function loadVideos(){
+function formatDate(date) {
 
-  try{
+  const d = new Date(date);
 
-    const res =
+  return d.toLocaleDateString(
+    undefined,
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
+  );
+
+}
+
+
+function formatViews(value) {
+
+  const number = Number(value || 0);
+
+  return number.toLocaleString();
+
+}
+
+
+/*
+--------------------------------------------------
+API
+--------------------------------------------------
+*/
+
+async function loadVideos() {
+
+  const loading =
+    document.getElementById("loading");
+
+  loading.classList.remove("hidden");
+
+  try {
+
+    const response =
       await fetch("/api/videos");
 
-    const videos =
-      await res.json();
-
-    count.textContent =
-      `${videos.length} video${videos.length === 1 ? "" : "s"} in your library`;
-
-    if(!videos.length){
-
-      grid.innerHTML = `
-        <div class="empty">
-
-          <div>▶</div>
-
-          <h3>Your library is empty</h3>
-
-          <p>
-            Upload your first video to get started.
-          </p>
-
-        </div>
-      `;
-
-      return;
-
+    if (!response.ok) {
+      throw new Error("Could not load videos.");
     }
 
+    videos = await response.json();
 
-    grid.innerHTML =
-      videos.map(v => `
+    renderVideos();
 
-        <article class="card">
+  } catch (error) {
 
-          <video
-            controls
-            preload="metadata"
-            src="${v.url}">
-          </video>
+    console.error(error);
 
-          <div class="meta">
+    document.getElementById("videoGrid").innerHTML = `
+      <div class="errorBox">
+        Could not load videos.
+        Please refresh the page.
+      </div>
+    `;
 
-            <h3 title="${v.name}">
-              ${v.name}
+  } finally {
+
+    loading.classList.add("hidden");
+
+  }
+
+}
+
+
+/*
+--------------------------------------------------
+RENDER VIDEOS
+--------------------------------------------------
+*/
+
+function renderVideos() {
+
+  const grid =
+    document.getElementById("videoGrid");
+
+  const emptyState =
+    document.getElementById("emptyState");
+
+  const search =
+    document.getElementById("searchInput")
+      .value
+      .trim()
+      .toLowerCase();
+
+  const filtered = videos.filter((video) => {
+
+    return (
+      video.title
+        .toLowerCase()
+        .includes(search) ||
+
+      (video.description || "")
+        .toLowerCase()
+        .includes(search)
+    );
+
+  });
+
+
+  document.getElementById("videoCount").textContent =
+    `${videos.length} ${
+      videos.length === 1
+        ? "video"
+        : "videos"
+    }`;
+
+
+  if (filtered.length === 0) {
+
+    grid.innerHTML = "";
+
+    emptyState.classList.remove("hidden");
+
+    return;
+
+  }
+
+  emptyState.classList.add("hidden");
+
+
+  grid.innerHTML = filtered
+    .map((video) => {
+
+      return `
+        <article
+          class="videoCard"
+          data-video-id="${escapeHTML(video.id)}"
+        >
+
+          <div
+            class="videoPreview"
+            onclick="openVideo('${video.id}')"
+          >
+
+            <video
+              src="${escapeHTML(video.url)}"
+              preload="metadata"
+              muted
+              playsinline
+            ></video>
+
+            <div class="playOverlay">
+              ▶
+            </div>
+
+            <div class="videoType">
+              VIDEO
+            </div>
+
+          </div>
+
+
+          <div class="videoCardBody">
+
+            <h3
+              class="videoTitle"
+              onclick="openVideo('${video.id}')"
+            >
+              ${escapeHTML(video.title)}
             </h3>
 
-            <p>
-              ${formatSize(v.size)}
+
+            <p class="videoDescription">
+              ${escapeHTML(
+                video.description || "No description."
+              )}
             </p>
+
+
+            <div class="videoMeta">
+
+              <span>
+                👁 ${formatViews(video.views)}
+              </span>
+
+              <span>
+                ❤️ ${formatViews(video.likes)}
+              </span>
+
+              <span>
+                ${formatDate(video.createdAt)}
+              </span>
+
+            </div>
+
+
+            <div class="videoActions">
+
+              <button
+                class="actionButton"
+                onclick="likeVideo('${video.id}')"
+              >
+                ❤️ Like
+              </button>
+
+              <button
+                class="actionButton"
+                onclick="openVideo('${video.id}')"
+              >
+                💬 Comment
+              </button>
+
+              <button
+                class="actionButton"
+                onclick="shareVideo('${video.id}')"
+              >
+                🔗 Share
+              </button>
+
+              <a
+                class="actionButton downloadAction"
+                href="${escapeHTML(video.downloadUrl)}"
+              >
+                ⬇️ Download
+              </a>
+
+            </div>
 
           </div>
 
         </article>
+      `;
 
-      `).join("");
+    })
+    .join("");
+
+}
+
+
+/*
+--------------------------------------------------
+OPEN VIDEO
+--------------------------------------------------
+*/
+
+async function openVideo(id, addHistory = true) {
+
+  const video =
+    videos.find(
+      item => item.id === id
+    );
+
+  if (!video) {
+    return;
+  }
+
+  currentVideo = video;
+
+
+  document.getElementById(
+    "largeVideo"
+  ).src = video.url;
+
+
+  document.getElementById(
+    "largeVideoTitle"
+  ).textContent = video.title;
+
+
+  document.getElementById(
+    "largeVideoDescription"
+  ).textContent =
+    video.description || "No description.";
+
+
+  document.getElementById(
+    "largeLikeCount"
+  ).textContent =
+    formatViews(video.likes);
+
+
+  document.getElementById(
+    "largeVideoStats"
+  ).textContent =
+    `👁 ${formatViews(video.views)} views • ❤️ ${formatViews(video.likes)} likes • ${formatDate(video.createdAt)}`;
+
+
+  document.getElementById(
+    "largeDownloadButton"
+  ).href =
+    video.downloadUrl;
+
+
+  renderComments(video);
+
+
+  updateAdminVideoActions();
+
+
+  document
+    .getElementById("videoModal")
+    .classList.remove("hidden");
+
+
+  document.body.classList.add("modalOpen");
+
+
+  if (addHistory) {
+
+    history.pushState(
+      {
+        videoId: video.id
+      },
+      "",
+      `/watch/${video.id}`
+    );
 
   }
 
-  catch(error){
 
-    count.textContent =
-      "Unable to load videos.";
+  const viewedKey =
+    `videohub_viewed_${video.id}`;
+
+  if (!sessionStorage.getItem(viewedKey)) {
+
+    sessionStorage.setItem(
+      viewedKey,
+      "1"
+    );
+
+    try {
+
+      const response =
+        await fetch(
+          `/api/videos/${video.id}/view`,
+          {
+            method: "POST"
+          }
+        );
+
+      if (response.ok) {
+
+        const data =
+          await response.json();
+
+        video.views = data.views;
+
+        document.getElementById(
+          "largeVideoStats"
+        ).textContent =
+          `👁 ${formatViews(video.views)} views • ❤️ ${formatViews(video.likes)} likes • ${formatDate(video.createdAt)}`;
+
+      }
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
 
   }
 
 }
 
 
-uploadForm.addEventListener(
-  "submit",
-  async event => {
+/*
+--------------------------------------------------
+CLOSE MODALS
+--------------------------------------------------
+*/
 
-    event.preventDefault();
+function closeModal(id) {
 
-    const file =
-      input.files[0];
+  const modal =
+    document.getElementById(id);
 
-    if(!file){
+  if (!modal) {
+    return;
+  }
 
-      statusBox.textContent =
-        "Please select a video first.";
+  modal.classList.add("hidden");
+
+  if (id === "videoModal") {
+
+    const video =
+      document.getElementById("largeVideo");
+
+    video.pause();
+
+    video.src = "";
+
+    currentVideo = null;
+
+  }
+
+  document.body.classList.remove(
+    "modalOpen"
+  );
+
+}
+
+
+/*
+--------------------------------------------------
+SHARE
+--------------------------------------------------
+*/
+
+async function shareVideo(id) {
+
+  const video =
+    videos.find(
+      item => item.id === id
+    );
+
+  if (!video) {
+    return;
+  }
+
+  const shareUrl =
+    `${window.location.origin}/watch/${video.id}`;
+
+
+  try {
+
+    if (
+      navigator.share
+    ) {
+
+      await navigator.share({
+
+        title: video.title,
+
+        text:
+          `Watch "${video.title}" on VideoHub`,
+
+        url: shareUrl
+
+      });
 
       return;
 
     }
 
 
-    uploadButton.disabled = true;
-
-    uploadButton.textContent =
-      "Uploading...";
-
-
-    uploadProgress.classList.remove(
-      "hidden"
+    await navigator.clipboard.writeText(
+      shareUrl
     );
 
-    statusBox.textContent = "";
+    showToast(
+      "Video link copied!"
+    );
+
+  } catch (error) {
+
+    if (
+      error &&
+      error.name === "AbortError"
+    ) {
+      return;
+    }
+
+    try {
+
+      await navigator.clipboard.writeText(
+        shareUrl
+      );
+
+      showToast(
+        "Video link copied!"
+      );
+
+    } catch {
+
+      showToast(
+        "Could not share the video."
+      );
+
+    }
+
+  }
+
+}
 
 
-    const formData =
-      new FormData();
+/*
+--------------------------------------------------
+LARGE SHARE
+--------------------------------------------------
+*/
 
-    formData.append(
-      "video",
-      file
+document
+  .getElementById("largeShareButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (currentVideo) {
+        shareVideo(
+          currentVideo.id
+        );
+      }
+
+    }
+  );
+
+
+/*
+--------------------------------------------------
+LIKE
+--------------------------------------------------
+*/
+
+async function likeVideo(id) {
+
+  const likedKey =
+    `videohub_liked_${id}`;
+
+  if (
+    localStorage.getItem(likedKey)
+  ) {
+
+    showToast(
+      "You already liked this video."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/videos/${id}/like`,
+        {
+          method: "POST"
+        }
+      );
+
+
+    if (!response.ok) {
+      throw new Error(
+        "Like failed."
+      );
+    }
+
+
+    const data =
+      await response.json();
+
+
+    localStorage.setItem(
+      likedKey,
+      "1"
     );
 
 
-    const xhr =
-      new XMLHttpRequest();
-
-    currentXHR = xhr;
-
-
-    let startTime =
-      Date.now();
+    const video =
+      videos.find(
+        item => item.id === id
+      );
 
 
-    xhr.open(
-      "POST",
-      "/api/upload",
-      true
+    if (video) {
+
+      video.likes =
+        data.likes;
+
+    }
+
+
+    if (
+      currentVideo &&
+      currentVideo.id === id
+    ) {
+
+      currentVideo.likes =
+        data.likes;
+
+
+      document.getElementById(
+        "largeLikeCount"
+      ).textContent =
+        formatViews(data.likes);
+
+
+      document.getElementById(
+        "largeVideoStats"
+      ).textContent =
+        `👁 ${formatViews(currentVideo.views)} views • ❤️ ${formatViews(currentVideo.likes)} likes • ${formatDate(currentVideo.createdAt)}`;
+
+    }
+
+
+    renderVideos();
+
+    showToast(
+      "Liked ❤️"
+    );
+
+  } catch (error) {
+
+    showToast(
+      "Could not like the video."
+    );
+
+  }
+
+}
+
+
+/*
+--------------------------------------------------
+LARGE LIKE
+--------------------------------------------------
+*/
+
+document
+  .getElementById("largeLikeButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (currentVideo) {
+        likeVideo(
+          currentVideo.id
+        );
+      }
+
+    }
+  );
+
+
+/*
+--------------------------------------------------
+COMMENTS
+--------------------------------------------------
+*/
+
+function renderComments(video) {
+
+  const list =
+    document.getElementById(
+      "commentList"
     );
 
 
-    xhr.upload.onprogress =
-      function(event){
+  const comments =
+    Array.isArray(video.comments)
+      ? video.comments
+      : [];
 
-        if(!event.lengthComputable)
-          return;
+
+  if (comments.length === 0) {
+
+    list.innerHTML = `
+      <div class="noComments">
+        No comments yet. Be the first!
+      </div>
+    `;
+
+    return;
+
+  }
 
 
-        const percent =
-          Math.round(
-            (event.loaded / event.total) * 100
+  list.innerHTML =
+    comments
+      .slice()
+      .reverse()
+      .map(
+        comment => `
+          <div class="comment">
+
+            <div class="commentAvatar">
+              👤
+            </div>
+
+            <div class="commentContent">
+
+              <strong>
+                ${escapeHTML(comment.name)}
+              </strong>
+
+              <p>
+                ${escapeHTML(comment.text)}
+              </p>
+
+              <small>
+                ${formatDate(comment.createdAt)}
+              </small>
+
+            </div>
+
+          </div>
+        `
+      )
+      .join("");
+
+}
+
+
+document
+  .getElementById("commentForm")
+  .addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+
+      if (!currentVideo) {
+        return;
+      }
+
+
+      const name =
+        document.getElementById(
+          "commentName"
+        ).value.trim() ||
+        "Visitor";
+
+
+      const text =
+        document.getElementById(
+          "commentText"
+        ).value.trim();
+
+
+      if (!text) {
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/videos/${currentVideo.id}/comments`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                name,
+                text
+              })
+            }
           );
 
 
-        progressFill.style.width =
-          percent + "%";
+        if (!response.ok) {
+          throw new Error(
+            "Comment failed."
+          );
+        }
 
 
-        progressPercent.textContent =
-          percent + "%";
+        const data =
+          await response.json();
 
 
-        progressText.textContent =
-          percent >= 100
-            ? "Processing video..."
-            : "Uploading video...";
+        if (!Array.isArray(
+          currentVideo.comments
+        )) {
 
-
-        progressSize.textContent =
-          `${formatSize(event.loaded)} / ${formatSize(event.total)}`;
-
-
-        const elapsed =
-          (Date.now() - startTime) / 1000;
-
-
-        if(elapsed > 0){
-
-          const speed =
-            event.loaded / elapsed;
-
-          progressSpeed.textContent =
-            `${formatSize(speed)}/s`;
+          currentVideo.comments = [];
 
         }
 
-      };
+
+        currentVideo.comments.push(
+          data.comment
+        );
 
 
-    xhr.onload =
-      async function(){
-
-        currentXHR = null;
-
-
-        if(
-          xhr.status >= 200 &&
-          xhr.status < 300
-        ){
-
-          progressFill.style.width =
-            "100%";
-
-          progressPercent.textContent =
-            "100%";
-
-          progressText.textContent =
-            "Upload complete ✓";
+        const mainVideo =
+          videos.find(
+            item =>
+              item.id === currentVideo.id
+          );
 
 
-          progressSize.textContent =
-            `${formatSize(file.size)} / ${formatSize(file.size)}`;
+        if (mainVideo) {
 
-
-          progressSpeed.textContent =
-            "Complete";
-
-
-          statusBox.textContent =
-            "Video uploaded successfully.";
-
-
-          uploadButton.disabled =
-            false;
-
-
-          uploadButton.textContent =
-            "Start upload";
-
-
-          uploadForm.reset();
-
-          fileName.textContent =
-            "No file selected";
-
-
-          await loadVideos();
+          mainVideo.comments =
+            currentVideo.comments;
 
         }
 
-        else{
 
-          let message =
-            "Upload failed.";
-
-          try{
-
-            const json =
-              JSON.parse(xhr.responseText);
-
-            message =
-              json.error || message;
-
-          }
-          catch(error){}
+        document.getElementById(
+          "commentText"
+        ).value = "";
 
 
-          statusBox.textContent =
-            message;
+        renderComments(
+          currentVideo
+        );
 
 
-          uploadButton.disabled =
-            false;
+        showToast(
+          "Comment posted!"
+        );
 
-          uploadButton.textContent =
-            "Try again";
+      } catch (error) {
 
-        }
+        showToast(
+          "Could not post comment."
+        );
 
-      };
+      }
 
-
-    xhr.onerror =
-      function(){
-
-        currentXHR = null;
-
-        statusBox.textContent =
-          "Network error. Please try again.";
-
-        uploadButton.disabled =
-          false;
-
-        uploadButton.textContent =
-          "Try again";
-
-      };
+    }
+  );
 
 
-    xhr.onabort =
-      function(){
+/*
+--------------------------------------------------
+ADMIN STATUS
+--------------------------------------------------
+*/
 
-        currentXHR = null;
+async function checkAdminStatus() {
 
-        progressText.textContent =
-          "Upload cancelled";
+  if (!adminToken) {
 
-        statusBox.textContent =
-          "Upload cancelled.";
+    setAdminUI(false);
 
-        uploadButton.disabled =
-          false;
-
-        uploadButton.textContent =
-          "Start upload";
-
-      };
-
-
-    xhr.send(formData);
+    return;
 
   }
-);
 
 
-cancelUpload.addEventListener(
-  "click",
-  () => {
+  try {
 
-    if(currentXHR){
+    const response =
+      await fetch(
+        "/api/admin/status",
+        {
+          headers: {
+            "x-admin-token":
+              adminToken
+          }
+        }
+      );
 
-      currentXHR.abort();
+
+    if (!response.ok) {
+      throw new Error();
+    }
+
+
+    const data =
+      await response.json();
+
+
+    if (data.loggedIn) {
+
+      setAdminUI(true);
+
+    } else {
+
+      logoutAdmin(false);
+
+    }
+
+  } catch {
+
+    setAdminUI(false);
+
+  }
+
+}
+
+
+function setAdminUI(loggedIn) {
+
+  const adminButton =
+    document.getElementById(
+      "adminButton"
+    );
+
+
+  const uploadButton =
+    document.getElementById(
+      "uploadButton"
+    );
+
+
+  const heroUpload =
+    document.getElementById(
+      "heroUploadButton"
+    );
+
+
+  if (loggedIn) {
+
+    adminButton.textContent =
+      "Logout Admin";
+
+
+    uploadButton.classList.remove(
+      "hidden"
+    );
+
+
+    heroUpload.classList.remove(
+      "hidden"
+    );
+
+  } else {
+
+    adminButton.textContent =
+      "Admin Login";
+
+
+    uploadButton.classList.add(
+      "hidden"
+    );
+
+
+    heroUpload.classList.add(
+      "hidden"
+    );
+
+  }
+
+
+  updateAdminVideoActions();
+
+}
+
+
+function updateAdminVideoActions() {
+
+  const actions =
+    document.getElementById(
+      "adminVideoActions"
+    );
+
+
+  if (
+    adminToken &&
+    currentVideo
+  ) {
+
+    actions.classList.remove(
+      "hidden"
+    );
+
+  } else {
+
+    actions.classList.add(
+      "hidden"
+    );
+
+  }
+
+}
+
+
+/*
+--------------------------------------------------
+ADMIN LOGIN
+--------------------------------------------------
+*/
+
+document
+  .getElementById("adminButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (adminToken) {
+
+        logoutAdmin(true);
+
+      } else {
+
+        document
+          .getElementById("adminModal")
+          .classList.remove(
+            "hidden"
+          );
+
+      }
+
+    }
+  );
+
+
+document
+  .getElementById("adminForm")
+  .addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+
+      const password =
+        document.getElementById(
+          "adminPassword"
+        ).value;
+
+
+      const message =
+        document.getElementById(
+          "adminMessage"
+        );
+
+
+      message.textContent =
+        "Logging in...";
+
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/admin/login",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                password
+              })
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error ||
+            "Login failed."
+          );
+
+        }
+
+
+        adminToken =
+          data.token;
+
+
+        localStorage.setItem(
+          "videohub_admin_token",
+          adminToken
+        );
+
+
+        document.getElementById(
+          "adminPassword"
+        ).value = "";
+
+
+        message.textContent =
+          "Login successful.";
+
+
+        setAdminUI(true);
+
+
+        setTimeout(() => {
+
+          closeModal(
+            "adminModal"
+          );
+
+        }, 500);
+
+
+        showToast(
+          "Admin login successful."
+        );
+
+      } catch (error) {
+
+        message.textContent =
+          error.message;
+
+      }
+
+    }
+  );
+
+
+async function logoutAdmin(showMessage) {
+
+  try {
+
+    await fetch(
+      "/api/admin/logout",
+      {
+        method: "POST",
+
+        headers: {
+          "x-admin-token":
+            adminToken
+        }
+      }
+    );
+
+  } catch {}
+
+
+  adminToken = "";
+
+  localStorage.removeItem(
+    "videohub_admin_token"
+  );
+
+
+  setAdminUI(false);
+
+
+  if (showMessage) {
+
+    showToast(
+      "Admin logged out."
+    );
+
+  }
+
+}
+
+
+/*
+--------------------------------------------------
+UPLOAD MODAL
+--------------------------------------------------
+*/
+
+function openUploadModal() {
+
+  if (!adminToken) {
+
+    document
+      .getElementById("adminModal")
+      .classList.remove(
+        "hidden"
+      );
+
+    return;
+
+  }
+
+
+  document
+    .getElementById("uploadModal")
+    .classList.remove(
+      "hidden"
+    );
+
+}
+
+
+document
+  .getElementById("uploadButton")
+  .addEventListener(
+    "click",
+    openUploadModal
+  );
+
+
+document
+  .getElementById("heroUploadButton")
+  .addEventListener(
+    "click",
+    openUploadModal
+  );
+
+
+/*
+--------------------------------------------------
+SELECTED FILE
+--------------------------------------------------
+*/
+
+document
+  .getElementById("videoFile")
+  .addEventListener(
+    "change",
+    () => {
+
+      const file =
+        document.getElementById(
+          "videoFile"
+        ).files[0];
+
+
+      const selected =
+        document.getElementById(
+          "selectedFile"
+        );
+
+
+      if (!file) {
+
+        selected.classList.add(
+          "hidden"
+        );
+
+        return;
+
+      }
+
+
+      selected.classList.remove(
+        "hidden"
+      );
+
+
+      selected.innerHTML = `
+        <strong>
+          ${escapeHTML(file.name)}
+        </strong>
+
+        <span>
+          ${formatSize(file.size)}
+        </span>
+      `;
+
+
+      const title =
+        document.getElementById(
+          "videoTitle"
+        );
+
+
+      if (!title.value.trim()) {
+
+        title.value =
+          file.name.replace(
+            /\.[^/.]+$/,
+            ""
+          );
+
+      }
+
+    }
+  );
+
+
+/*
+--------------------------------------------------
+UPLOAD
+--------------------------------------------------
+*/
+
+document
+  .getElementById("uploadForm")
+  .addEventListener(
+    "submit",
+    (event) => {
+
+      event.preventDefault();
+
+      startUpload();
+
+    }
+  );
+
+
+function startUpload() {
+
+  const file =
+    document.getElementById(
+      "videoFile"
+    ).files[0];
+
+
+  if (!file) {
+
+    showToast(
+      "Please select a video."
+    );
+
+    return;
+
+  }
+
+
+  if (!adminToken) {
+
+    showToast(
+      "Please login as admin."
+    );
+
+    return;
+
+  }
+
+
+  const title =
+    document.getElementById(
+      "videoTitle"
+    ).value.trim();
+
+
+  const description =
+    document.getElementById(
+      "videoDescription"
+    ).value.trim();
+
+
+  const formData =
+    new FormData();
+
+
+  formData.append(
+    "video",
+    file
+  );
+
+
+  formData.append(
+    "title",
+    title
+  );
+
+
+  formData.append(
+    "description",
+    description
+  );
+
+
+  uploadRequest =
+    new XMLHttpRequest();
+
+
+  uploadStartTime =
+    Date.now();
+
+
+  const progressArea =
+    document.getElementById(
+      "uploadProgressArea"
+    );
+
+
+  const progressFill =
+    document.getElementById(
+      "progressBarFill"
+    );
+
+
+  const percent =
+    document.getElementById(
+      "progressPercent"
+    );
+
+
+  const uploaded =
+    document.getElementById(
+      "uploadedSize"
+    );
+
+
+  const speed =
+    document.getElementById(
+      "uploadSpeed"
+    );
+
+
+  const status =
+    document.getElementById(
+      "uploadStatus"
+    );
+
+
+  const startButton =
+    document.getElementById(
+      "startUpload"
+    );
+
+
+  const cancelButton =
+    document.getElementById(
+      "cancelUpload"
+    );
+
+
+  progressArea.classList.remove(
+    "hidden"
+  );
+
+
+  cancelButton.classList.remove(
+    "hidden"
+  );
+
+
+  startButton.disabled = true;
+
+
+  progressFill.style.width =
+    "0%";
+
+
+  percent.textContent =
+    "0%";
+
+
+  status.textContent =
+    "Starting upload...";
+
+
+  uploadRequest.open(
+    "POST",
+    "/api/upload"
+  );
+
+
+  uploadRequest.setRequestHeader(
+    "x-admin-token",
+    adminToken
+  );
+
+
+  uploadRequest.upload.onprogress =
+    (event) => {
+
+      if (!event.lengthComputable) {
+        return;
+      }
+
+
+      const percentage =
+        Math.round(
+          (event.loaded /
+            event.total) *
+          100
+        );
+
+
+      progressFill.style.width =
+        `${percentage}%`;
+
+
+      percent.textContent =
+        `${percentage}%`;
+
+
+      uploaded.textContent =
+        `${formatSize(event.loaded)} / ${formatSize(event.total)}`;
+
+
+      const elapsed =
+        (Date.now() -
+          uploadStartTime) /
+        1000;
+
+
+      if (elapsed > 0) {
+
+        const bytesPerSecond =
+          event.loaded /
+          elapsed;
+
+
+        speed.textContent =
+          `${formatSize(bytesPerSecond)}/s`;
+
+      }
+
+
+      if (percentage >= 100) {
+
+        status.textContent =
+          "Processing video...";
+
+      } else {
+
+        status.textContent =
+          "Uploading video...";
+
+      }
+
+    };
+
+
+  uploadRequest.onload =
+    async () => {
+
+      startButton.disabled =
+        false;
+
+
+      cancelButton.classList.add(
+        "hidden"
+      );
+
+
+      if (
+        uploadRequest.status >= 200 &&
+        uploadRequest.status < 300
+      ) {
+
+        progressFill.style.width =
+          "100%";
+
+
+        percent.textContent =
+          "100%";
+
+
+        status.textContent =
+          "Upload complete ✓";
+
+
+        showToast(
+          "Video uploaded successfully!"
+        );
+
+
+        setTimeout(() => {
+
+          closeModal(
+            "uploadModal"
+          );
+
+
+          resetUploadForm();
+
+
+          loadVideos();
+
+        }, 700);
+
+      } else {
+
+        let message =
+          "Upload failed.";
+
+
+        try {
+
+          const data =
+            JSON.parse(
+              uploadRequest.responseText
+            );
+
+
+          if (data.error) {
+            message =
+              data.error;
+          }
+
+        } catch {}
+
+
+        status.textContent =
+          message;
+
+
+        showToast(
+          message
+        );
+
+      }
+
+    };
+
+
+  uploadRequest.onerror =
+    () => {
+
+      startButton.disabled =
+        false;
+
+
+      cancelButton.classList.add(
+        "hidden"
+      );
+
+
+      status.textContent =
+        "Network error. Upload failed.";
+
+
+      showToast(
+        "Network error."
+      );
+
+    };
+
+
+  uploadRequest.onabort =
+    () => {
+
+      startButton.disabled =
+        false;
+
+
+      cancelButton.classList.add(
+        "hidden"
+      );
+
+
+      status.textContent =
+        "Upload cancelled.";
+
+    };
+
+
+  uploadRequest.send(
+    formData
+  );
+
+}
+
+
+/*
+--------------------------------------------------
+CANCEL UPLOAD
+--------------------------------------------------
+*/
+
+document
+  .getElementById("cancelUpload")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (uploadRequest) {
+
+        uploadRequest.abort();
+
+      }
+
+    }
+  );
+
+
+function resetUploadForm() {
+
+  document
+    .getElementById("uploadForm")
+    .reset();
+
+
+  document
+    .getElementById("uploadProgressArea")
+    .classList.add(
+      "hidden"
+    );
+
+
+  document
+    .getElementById("cancelUpload")
+    .classList.add(
+      "hidden"
+    );
+
+
+  document
+    .getElementById("startUpload")
+    .disabled = false;
+
+
+  document
+    .getElementById("selectedFile")
+    .classList.add(
+      "hidden"
+    );
+
+
+  document
+    .getElementById("progressBarFill")
+    .style.width = "0%";
+
+
+  document
+    .getElementById("progressPercent")
+    .textContent =
+    "0%";
+
+
+  uploadRequest = null;
+
+}
+
+
+/*
+--------------------------------------------------
+EDIT
+--------------------------------------------------
+*/
+
+document
+  .getElementById("editVideoButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (!currentVideo) {
+        return;
+      }
+
+
+      document.getElementById(
+        "editTitle"
+      ).value =
+        currentVideo.title;
+
+
+      document.getElementById(
+        "editDescription"
+      ).value =
+        currentVideo.description || "";
+
+
+      document
+        .getElementById("editModal")
+        .classList.remove(
+          "hidden"
+        );
+
+    }
+  );
+
+
+document
+  .getElementById("editForm")
+  .addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+
+      if (
+        !currentVideo ||
+        !adminToken
+      ) {
+        return;
+      }
+
+
+      const title =
+        document.getElementById(
+          "editTitle"
+        ).value.trim();
+
+
+      const description =
+        document.getElementById(
+          "editDescription"
+        ).value.trim();
+
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/videos/${currentVideo.id}`,
+            {
+              method: "PUT",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                "x-admin-token":
+                  adminToken
+              },
+
+              body: JSON.stringify({
+                title,
+                description
+              })
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error ||
+            "Edit failed."
+          );
+
+        }
+
+
+        currentVideo.title =
+          data.video.title;
+
+
+        currentVideo.description =
+          data.video.description;
+
+
+        const mainVideo =
+          videos.find(
+            item =>
+              item.id === currentVideo.id
+          );
+
+
+        if (mainVideo) {
+
+          mainVideo.title =
+            currentVideo.title;
+
+          mainVideo.description =
+            currentVideo.description;
+
+        }
+
+
+        document.getElementById(
+          "largeVideoTitle"
+        ).textContent =
+          currentVideo.title;
+
+
+        document.getElementById(
+          "largeVideoDescription"
+        ).textContent =
+          currentVideo.description ||
+          "No description.";
+
+
+        renderVideos();
+
+
+        closeModal(
+          "editModal"
+        );
+
+
+        showToast(
+          "Video updated."
+        );
+
+      } catch (error) {
+
+        showToast(
+          error.message
+        );
+
+      }
+
+    }
+  );
+
+
+/*
+--------------------------------------------------
+DELETE
+--------------------------------------------------
+*/
+
+document
+  .getElementById("deleteVideoButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      if (
+        !currentVideo ||
+        !adminToken
+      ) {
+        return;
+      }
+
+
+      const confirmed =
+        confirm(
+          "Are you sure you want to delete this video?"
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/videos/${currentVideo.id}`,
+            {
+              method: "DELETE",
+
+              headers: {
+                "x-admin-token":
+                  adminToken
+              }
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error ||
+            "Delete failed."
+          );
+
+        }
+
+
+        closeModal(
+          "videoModal"
+        );
+
+
+        currentVideo = null;
+
+
+        showToast(
+          "Video deleted."
+        );
+
+
+        loadVideos();
+
+      } catch (error) {
+
+        showToast(
+          error.message
+        );
+
+      }
+
+    }
+  );
+
+
+/*
+--------------------------------------------------
+SEARCH
+--------------------------------------------------
+*/
+
+document
+  .getElementById("searchInput")
+  .addEventListener(
+    "input",
+    renderVideos
+  );
+
+
+/*
+--------------------------------------------------
+MODAL CLOSE BUTTONS
+--------------------------------------------------
+*/
+
+document
+  .querySelectorAll(
+    "[data-close]"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          closeModal(
+            button.dataset.close
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+document
+  .querySelectorAll(".modalOverlay")
+  .forEach(
+    overlay => {
+
+      overlay.addEventListener(
+        "click",
+        () => {
+
+          const modal =
+            overlay.parentElement;
+
+          if (modal) {
+
+            closeModal(
+              modal.id
+            );
+
+          }
+
+        }
+      );
+
+    }
+  );
+
+
+document.addEventListener(
+  "keydown",
+  (event) => {
+
+    if (
+      event.key === "Escape"
+    ) {
+
+      document
+        .querySelectorAll(".modal:not(.hidden)")
+        .forEach(
+          modal => {
+
+            closeModal(
+              modal.id
+            );
+
+          }
+        );
 
     }
 
@@ -608,9 +2749,156 @@ cancelUpload.addEventListener(
 );
 
 
-loadVideos();
+/*
+--------------------------------------------------
+TOAST
+--------------------------------------------------
+*/
+
+function showToast(message) {
+
+  const old =
+    document.querySelector(
+      ".toast"
+    );
+
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const toast =
+    document.createElement(
+      "div"
+    );
+
+
+  toast.className =
+    "toast";
+
+
+  toast.textContent =
+    message;
+
+
+  document.body.appendChild(
+    toast
+  );
+
+
+  setTimeout(() => {
+
+    toast.classList.add(
+      "toastShow"
+    );
+
+  }, 20);
+
+
+  setTimeout(() => {
+
+    toast.classList.remove(
+      "toastShow"
+    );
+
+
+    setTimeout(() => {
+
+      toast.remove();
+
+    }, 300);
+
+  }, 2800);
+
+}
+
+
+/*
+--------------------------------------------------
+DIRECT WATCH URL
+--------------------------------------------------
+*/
+
+function openVideoFromUrl() {
+
+  const match =
+    window.location.pathname.match(
+      /^\/watch\/([^/]+)$/
+    );
+
+
+  if (!match) {
+    return;
+  }
+
+
+  const id =
+    decodeURIComponent(
+      match[1]
+    );
+
+
+  const video =
+    videos.find(
+      item => item.id === id
+    );
+
+
+  if (video) {
+
+    openVideo(
+      id,
+      false
+    );
+
+  }
+
+}
+
+
+window.addEventListener(
+  "popstate",
+  () => {
+
+    if (
+      window.location.pathname === "/"
+    ) {
+
+      closeModal(
+        "videoModal"
+      );
+
+    } else {
+
+      openVideoFromUrl();
+
+    }
+
+  }
+);
+
+
+/*
+--------------------------------------------------
+START
+--------------------------------------------------
+*/
+
+async function startApp() {
+
+  await checkAdminStatus();
+
+  await loadVideos();
+
+  openVideoFromUrl();
+
+}
+
+
+startApp();
 
 </script>
 
 </body>
-                                </html>
+      </html>

@@ -6,40 +6,53 @@ const crypto = require("crypto");
 
 const app = express();
 
-const PORT = process.env.PORT || 10000;
+const PORT = Number(process.env.PORT) || 10000;
+
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
 
-const PUBLIC_DIR = path.join(__dirname, "public");
-const DATA_FILE = path.join(UPLOAD_DIR, "videos.json");
+const DATA_DIR =
+  process.env.DATA_DIR || path.join(__dirname, "data");
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "CHANGE_THIS_PASSWORD";
+const DATA_FILE = path.join(DATA_DIR, "videos.json");
+
+const PUBLIC_DIR = path.join(__dirname, "public");
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024 * 1024;
 
+const ALLOWED_EXTENSIONS = new Set([
+  ".mp4",
+  ".webm",
+  ".ogg",
+  ".mov",
+  ".m4v"
+]);
+
+const sessions = new Map();
+
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 if (!fs.existsSync(DATA_FILE)) {
   fs.writeFileSync(DATA_FILE, "[]", "utf8");
 }
+
+/* =========================
+   BASIC HELPERS
+========================= */
 
 function readVideos() {
   try {
     const data = fs.readFileSync(DATA_FILE, "utf8");
     const videos = JSON.parse(data);
 
-    if (!Array.isArray(videos)) {
-      return [];
-    }
-
-    return videos;
+    return Array.isArray(videos) ? videos : [];
   } catch {
     return [];
   }
 }
 
-function saveVideos(videos) {
+function writeVideos(videos) {
   fs.writeFileSync(
     DATA_FILE,
     JSON.stringify(videos, null, 2),
@@ -51,46 +64,138 @@ function createId() {
   return crypto.randomBytes(12).toString("hex");
 }
 
-function safeText(value, maxLength = 5000) {
-  if (typeof value !== "string") {
-    return "";
+function createSessionToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function cleanText(value, maxLength) {
+  return String(value ?? "")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function getVideoById(id) {
+  const videos = readVideos();
+  return {
+    videos,
+    video: videos.find((item) => item.id === id)
+  };
+}
+
+function publicVideo(video, includeComments = false) {
+  const result = {
+    id: video.id,
+    name: video.name,
+    originalName: video.originalName,
+    title: video.title,
+    description: video.description,
+    size: video.size,
+    createdAt: video.createdAt,
+    modified: video.modified,
+    views: Number(video.views || 0),
+    likes: Number(video.likes || 0),
+    commentsCount: Array.isArray(video.comments)
+      ? video.comments.length
+      : 0,
+    url: `/videos/${encodeURIComponent(video.name)}`
+  };
+
+  if (includeComments) {
+    result.comments = Array.isArray(video.comments)
+      ? video.comments
+      : [];
   }
 
-  return value.trim().slice(0, maxLength);
+  return result;
 }
 
-function safeFileName(name) {
-  return name
-    .replace(/[^a-zA-Z0-9._-]/g, "_")
-    .replace(/_+/g, "_")
-    .slice(0, 180);
-}
+/* =========================
+   COOKIE / ADMIN SESSION
+========================= */
 
-function getFilePath(video) {
-  return path.join(UPLOAD_DIR, video.filename);
-}
+function getCookie(req, name) {
+  const cookieHeader = req.headers.cookie || "";
 
-function isAdmin(req) {
-  const token = req.headers["x-admin-token"];
+  const cookies = cookieHeader
+    .split(";")
+    .map((item) => item.trim());
 
-  if (!token) {
-    return false;
+  for (const cookie of cookies) {
+    const index = cookie.indexOf("=");
+
+    if (index === -1) continue;
+
+    const key = cookie.slice(0, index);
+    const value = cookie.slice(index + 1);
+
+    if (key === name) {
+      return decodeURIComponent(value);
+    }
   }
 
-  return adminSessions.has(token);
+  return null;
+}
+
+function isHttps(req) {
+  return (
+    req.headers["x-forwarded-proto"] === "https" ||
+    req.secure === true
+  );
+}
+
+function setAdminCookie(req, res, token) {
+  const secure = isHttps(req) ? "; Secure" : "";
+
+  res.setHeader(
+    "Set-Cookie",
+    `videohub_admin=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=43200${secure}`
+  );
+}
+
+function clearAdminCookie(req, res) {
+  const secure = isHttps(req) ? "; Secure" : "";
+
+  res.setHeader(
+    "Set-Cookie",
+    `videohub_admin=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure}`
+  );
 }
 
 function requireAdmin(req, res, next) {
-  if (!isAdmin(req)) {
+  const token = getCookie(req, "videohub_admin");
+
+  if (!token) {
     return res.status(401).json({
       error: "Admin login required."
+    });
+  }
+
+  const expiresAt = sessions.get(token);
+
+  if (!expiresAt || expiresAt < Date.now()) {
+    sessions.delete(token);
+
+    return res.status(401).json({
+      error: "Admin session expired."
     });
   }
 
   next();
 }
 
-const adminSessions = new Set();
+setInterval(() => {
+  const now = Date.now();
+
+  for (const [token, expiresAt] of sessions.entries()) {
+    if (expiresAt < now) {
+      sessions.delete(token);
+    }
+  }
+}, 60 * 60 * 1000).unref();
+
+/* =========================
+   MULTER UPLOAD
+========================= */
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -98,10 +203,14 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    const original = safeFileName(file.originalname);
-    const uniqueName = `${Date.now()}-${createId()}-${original}`;
+    const extension = path
+      .extname(file.originalname)
+      .toLowerCase();
 
-    cb(null, uniqueName);
+    const filename =
+      `${Date.now()}-${createId()}${extension}`;
+
+    cb(null, filename);
   }
 });
 
@@ -113,110 +222,167 @@ const upload = multer({
   },
 
   fileFilter: (req, file, cb) => {
-    const allowedExtensions =
-      /\.(mp4|webm|ogg|mov|m4v|avi|mkv)$/i;
+    const extension = path
+      .extname(file.originalname)
+      .toLowerCase();
 
-    const allowedMime =
-      /^video\//i.test(file.mimetype);
-
-    if (allowedExtensions.test(file.originalname) || allowedMime) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only video files are allowed."));
+    if (!ALLOWED_EXTENSIONS.has(extension)) {
+      return cb(
+        new Error(
+          "Unsupported video format. Use MP4, WebM, OGG, MOV or M4V."
+        )
+      );
     }
+
+    cb(null, true);
   }
 });
 
-app.use(express.json({ limit: "2mb" }));
+/* =========================
+   MIDDLEWARE
+========================= */
 
-app.use(express.static(PUBLIC_DIR));
+app.use(
+  express.json({
+    limit: "1mb"
+  })
+);
 
-/*
---------------------------------------------------
-ADMIN LOGIN
---------------------------------------------------
-*/
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "1mb"
+  })
+);
+
+/* =========================
+   HEALTH CHECK
+========================= */
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    service: "VideoHub",
+    time: new Date().toISOString()
+  });
+});
+
+/* =========================
+   ADMIN LOGIN
+========================= */
 
 app.post("/api/admin/login", (req, res) => {
-  const password = safeText(req.body.password, 500);
+  const configuredPassword = process.env.ADMIN_PASSWORD;
 
-  if (!password || password !== ADMIN_PASSWORD) {
+  if (!configuredPassword) {
+    return res.status(503).json({
+      error:
+        "ADMIN_PASSWORD is not configured in Render Environment Variables."
+    });
+  }
+
+  const password = String(req.body?.password || "");
+
+  if (password !== configuredPassword) {
     return res.status(401).json({
       error: "Incorrect admin password."
     });
   }
 
-  const token = crypto.randomBytes(32).toString("hex");
+  const token = createSessionToken();
 
-  adminSessions.add(token);
+  const expiresAt =
+    Date.now() + 12 * 60 * 60 * 1000;
+
+  sessions.set(token, expiresAt);
+
+  setAdminCookie(req, res, token);
 
   res.json({
-    success: true,
-    token
+    ok: true,
+    message: "Admin login successful."
   });
 });
 
-app.post("/api/admin/logout", (req, res) => {
-  const token = req.headers["x-admin-token"];
+/* =========================
+   ADMIN STATUS
+========================= */
 
-  if (token) {
-    adminSessions.delete(token);
+app.get("/api/admin/status", (req, res) => {
+  const token = getCookie(req, "videohub_admin");
+
+  if (!token) {
+    return res.json({
+      loggedIn: false
+    });
+  }
+
+  const expiresAt = sessions.get(token);
+
+  if (!expiresAt || expiresAt < Date.now()) {
+    sessions.delete(token);
+
+    return res.json({
+      loggedIn: false
+    });
   }
 
   res.json({
-    success: true
+    loggedIn: true
   });
 });
 
-app.get("/api/admin/status", (req, res) => {
+/* =========================
+   ADMIN LOGOUT
+========================= */
+
+app.post("/api/admin/logout", (req, res) => {
+  const token = getCookie(req, "videohub_admin");
+
+  if (token) {
+    sessions.delete(token);
+  }
+
+  clearAdminCookie(req, res);
+
   res.json({
-    loggedIn: isAdmin(req)
+    ok: true
   });
 });
 
-/*
---------------------------------------------------
-GET ALL VIDEOS
---------------------------------------------------
-*/
+/* =========================
+   GET ALL VIDEOS
+========================= */
 
 app.get("/api/videos", (req, res) => {
   const videos = readVideos();
 
-  const existingVideos = videos.filter((video) => {
-    return fs.existsSync(getFilePath(video));
-  });
+  const result = videos
+    .filter((video) => {
+      const filePath = path.join(
+        UPLOAD_DIR,
+        path.basename(video.name)
+      );
 
-  if (existingVideos.length !== videos.length) {
-    saveVideos(existingVideos);
-  }
-
-  const result = existingVideos
-    .map((video) => ({
-      ...video,
-      url: `/videos/${encodeURIComponent(video.filename)}`,
-      downloadUrl: `/api/videos/${video.id}/download`
-    }))
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
-    );
+      return fs.existsSync(filePath);
+    })
+    .sort((a, b) => {
+      return (
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+      );
+    })
+    .map((video) => publicVideo(video));
 
   res.json(result);
 });
 
-/*
---------------------------------------------------
-GET SINGLE VIDEO
---------------------------------------------------
-*/
+/* =========================
+   GET ONE VIDEO
+========================= */
 
 app.get("/api/videos/:id", (req, res) => {
-  const videos = readVideos();
-
-  const video = videos.find(
-    (item) => item.id === req.params.id
-  );
+  const { video } = getVideoById(req.params.id);
 
   if (!video) {
     return res.status(404).json({
@@ -224,107 +390,89 @@ app.get("/api/videos/:id", (req, res) => {
     });
   }
 
-  res.json({
-    ...video,
-    url: `/videos/${encodeURIComponent(video.filename)}`,
-    downloadUrl: `/api/videos/${video.id}/download`
-  });
+  const filePath = path.join(
+    UPLOAD_DIR,
+    path.basename(video.name)
+  );
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({
+      error: "Video file not found."
+    });
+  }
+
+  res.json(publicVideo(video, true));
 });
 
-/*
---------------------------------------------------
-UPLOAD VIDEO
---------------------------------------------------
-*/
+/* =========================
+   UPLOAD VIDEO
+========================= */
 
 app.post(
   "/api/upload",
   requireAdmin,
-  (req, res, next) => {
-    upload.single("video")(req, res, (error) => {
-      if (error) {
-        if (error instanceof multer.MulterError) {
-          if (error.code === "LIMIT_FILE_SIZE") {
-            return res.status(413).json({
-              error: "Video is larger than the 30GB limit."
-            });
-          }
-        }
-
-        return res.status(400).json({
-          error: error.message || "Upload failed."
-        });
-      }
-
-      next();
-    });
-  },
-
+  upload.single("video"),
   (req, res) => {
     if (!req.file) {
       return res.status(400).json({
-        error: "Please select a video."
+        error: "No video selected."
       });
     }
 
     const title =
-      safeText(req.body.title, 200) ||
+      cleanText(req.body?.title, 200) ||
       path.parse(req.file.originalname).name;
 
     const description =
-      safeText(req.body.description, 3000);
+      cleanText(req.body?.description, 2000);
+
+    const now = new Date().toISOString();
 
     const video = {
       id: createId(),
-
-      filename: req.file.filename,
-
+      name: req.file.filename,
       originalName: req.file.originalname,
-
       title,
-
       description,
-
       size: req.file.size,
-
-      mimeType: req.file.mimetype,
-
+      createdAt: now,
+      modified: now,
       views: 0,
-
       likes: 0,
-
-      comments: [],
-
-      createdAt: new Date().toISOString()
+      comments: []
     };
 
-    const videos = readVideos();
+    try {
+      const videos = readVideos();
 
-    videos.push(video);
+      videos.push(video);
 
-    saveVideos(videos);
+      writeVideos(videos);
 
-    res.status(201).json({
-      success: true,
+      res.status(201).json({
+        ok: true,
+        message: "Video uploaded successfully.",
+        video: publicVideo(video, true)
+      });
+    } catch (error) {
+      try {
+        fs.unlinkSync(
+          path.join(UPLOAD_DIR, req.file.filename)
+        );
+      } catch {}
 
-      message: "Video uploaded successfully.",
+      console.error(error);
 
-      video: {
-        ...video,
-        url: `/videos/${encodeURIComponent(
-          video.filename
-        )}`,
-        downloadUrl: `/api/videos/${video.id}/download`
-      }
-    });
+      res.status(500).json({
+        error: "Could not save video information."
+      });
+    }
   }
 );
 
-/*
---------------------------------------------------
-VIEW COUNTER
---------------------------------------------------
-*/
+/* =========================
+   ADD VIEW
+========================= */
 
 app.post("/api/videos/:id/view", (req, res) => {
   const videos = readVideos();
@@ -341,19 +489,19 @@ app.post("/api/videos/:id/view", (req, res) => {
 
   video.views = Number(video.views || 0) + 1;
 
-  saveVideos(videos);
+  video.modified = new Date().toISOString();
+
+  writeVideos(videos);
 
   res.json({
-    success: true,
+    ok: true,
     views: video.views
   });
 });
 
-/*
---------------------------------------------------
-LIKE
---------------------------------------------------
-*/
+/* =========================
+   LIKE / UNLIKE
+========================= */
 
 app.post("/api/videos/:id/like", (req, res) => {
   const videos = readVideos();
@@ -368,35 +516,54 @@ app.post("/api/videos/:id/like", (req, res) => {
     });
   }
 
-  video.likes = Number(video.likes || 0) + 1;
+  const action = req.body?.action === "unlike"
+    ? "unlike"
+    : "like";
 
-  saveVideos(videos);
+  if (action === "unlike") {
+    video.likes = Math.max(
+      0,
+      Number(video.likes || 0) - 1
+    );
+  } else {
+    video.likes = Number(video.likes || 0) + 1;
+  }
+
+  writeVideos(videos);
 
   res.json({
-    success: true,
+    ok: true,
     likes: video.likes
   });
 });
 
-/*
---------------------------------------------------
-COMMENTS
---------------------------------------------------
-*/
+/* =========================
+   GET COMMENTS
+========================= */
 
-app.post("/api/videos/:id/comments", (req, res) => {
-  const name =
-    safeText(req.body.name, 80) || "Visitor";
+app.get("/api/videos/:id/comments", (req, res) => {
+  const { video } = getVideoById(req.params.id);
 
-  const text =
-    safeText(req.body.text, 1000);
-
-  if (!text) {
-    return res.status(400).json({
-      error: "Comment cannot be empty."
+  if (!video) {
+    return res.status(404).json({
+      error: "Video not found."
     });
   }
 
+  const comments = Array.isArray(video.comments)
+    ? video.comments
+    : [];
+
+  res.json(
+    [...comments].reverse()
+  );
+});
+
+/* =========================
+   ADD COMMENT
+========================= */
+
+app.post("/api/videos/:id/comments", (req, res) => {
   const videos = readVideos();
 
   const video = videos.find(
@@ -409,69 +576,59 @@ app.post("/api/videos/:id/comments", (req, res) => {
     });
   }
 
+  const name = cleanText(
+    req.body?.name,
+    50
+  );
+
+  const text = cleanText(
+    req.body?.text,
+    500
+  );
+
+  if (!name) {
+    return res.status(400).json({
+      error: "Please enter your name."
+    });
+  }
+
+  if (!text) {
+    return res.status(400).json({
+      error: "Please enter a comment."
+    });
+  }
+
   if (!Array.isArray(video.comments)) {
     video.comments = [];
   }
 
   const comment = {
     id: createId(),
-
     name,
-
     text,
-
     createdAt: new Date().toISOString()
   };
 
   video.comments.push(comment);
 
-  if (video.comments.length > 100) {
+  if (video.comments.length > 1000) {
     video.comments =
-      video.comments.slice(-100);
+      video.comments.slice(-1000);
   }
 
-  saveVideos(videos);
+  video.modified = new Date().toISOString();
+
+  writeVideos(videos);
 
   res.status(201).json({
-    success: true,
+    ok: true,
     comment
   });
 });
 
-/*
---------------------------------------------------
-DOWNLOAD
---------------------------------------------------
-*/
-
-app.get("/api/videos/:id/download", (req, res) => {
-  const videos = readVideos();
-
-  const video = videos.find(
-    (item) => item.id === req.params.id
-  );
-
-  if (!video) {
-    return res.status(404).send("Video not found.");
-  }
-
-  const filePath = getFilePath(video);
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send("Video file not found.");
-  }
-
-  const downloadName =
-    video.originalName || video.filename;
-
-  res.download(filePath, downloadName);
-});
-
-/*
---------------------------------------------------
-EDIT VIDEO
---------------------------------------------------
-*/
+/* =========================
+   EDIT VIDEO
+========================= */
 
 app.put(
   "/api/videos/:id",
@@ -489,32 +646,38 @@ app.put(
       });
     }
 
-    const title =
-      safeText(req.body.title, 200);
+    const title = cleanText(
+      req.body?.title,
+      200
+    );
 
-    const description =
-      safeText(req.body.description, 3000);
+    const description = cleanText(
+      req.body?.description,
+      2000
+    );
 
-    if (title) {
-      video.title = title;
+    if (!title) {
+      return res.status(400).json({
+        error: "Title is required."
+      });
     }
 
+    video.title = title;
     video.description = description;
+    video.modified = new Date().toISOString();
 
-    saveVideos(videos);
+    writeVideos(videos);
 
     res.json({
-      success: true,
-      video
+      ok: true,
+      video: publicVideo(video, true)
     });
   }
 );
 
-/*
---------------------------------------------------
-DELETE VIDEO
---------------------------------------------------
-*/
+/* =========================
+   DELETE VIDEO
+========================= */
 
 app.delete(
   "/api/videos/:id",
@@ -534,44 +697,95 @@ app.delete(
 
     const video = videos[index];
 
-    const filePath = getFilePath(video);
+    const filePath = path.join(
+      UPLOAD_DIR,
+      path.basename(video.name)
+    );
 
     try {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
+
+      videos.splice(index, 1);
+
+      writeVideos(videos);
+
+      res.json({
+        ok: true,
+        message: "Video deleted successfully."
+      });
     } catch (error) {
-      return res.status(500).json({
-        error: "Could not delete video file."
+      console.error(error);
+
+      res.status(500).json({
+        error: "Could not delete video."
       });
     }
-
-    videos.splice(index, 1);
-
-    saveVideos(videos);
-
-    res.json({
-      success: true
-    });
   }
 );
 
-/*
---------------------------------------------------
-VIDEO FILES
---------------------------------------------------
-*/
+/* =========================
+   DOWNLOAD VIDEO
+========================= */
+
+app.get(
+  "/api/videos/:id/download",
+  (req, res) => {
+    const { video } = getVideoById(req.params.id);
+
+    if (!video) {
+      return res.status(404).send(
+        "Video not found."
+      );
+    }
+
+    const filePath = path.join(
+      UPLOAD_DIR,
+      path.basename(video.name)
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send(
+        "Video file not found."
+      );
+    }
+
+    const downloadName =
+      video.originalName ||
+      `${video.title}.mp4`;
+
+    res.download(
+      filePath,
+      path.basename(downloadName),
+      (error) => {
+        if (error) {
+          console.error(
+            "Download error:",
+            error.message
+          );
+        }
+      }
+    );
+  }
+);
+
+/* =========================
+   VIDEO FILES
+========================= */
 
 app.use(
   "/videos",
-  express.static(UPLOAD_DIR)
+  express.static(UPLOAD_DIR, {
+    acceptRanges: true,
+    fallthrough: true,
+    maxAge: "1h"
+  })
 );
 
-/*
---------------------------------------------------
-WATCH PAGE
---------------------------------------------------
-*/
+/* =========================
+   WATCH URL
+========================= */
 
 app.get("/watch/:id", (req, res) => {
   res.sendFile(
@@ -579,11 +793,27 @@ app.get("/watch/:id", (req, res) => {
   );
 });
 
-/*
---------------------------------------------------
-SPA FALLBACK
---------------------------------------------------
-*/
+/* =========================
+   PUBLIC WEBSITE
+========================= */
+
+app.use(
+  express.static(PUBLIC_DIR)
+);
+
+/* =========================
+   API 404
+========================= */
+
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    error: "API route not found."
+  });
+});
+
+/* =========================
+   SPA FALLBACK
+========================= */
 
 app.get("*splat", (req, res) => {
   res.sendFile(
@@ -591,28 +821,47 @@ app.get("*splat", (req, res) => {
   );
 });
 
-/*
---------------------------------------------------
-ERROR HANDLER
---------------------------------------------------
-*/
+/* =========================
+   ERROR HANDLER
+========================= */
 
 app.use((error, req, res, next) => {
   console.error(error);
 
-  res.status(500).json({
-    error: "Server error."
+  if (error instanceof multer.MulterError) {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        error:
+          "Video is larger than the 30GB upload limit."
+      });
+    }
+
+    return res.status(400).json({
+      error: error.message
+    });
+  }
+
+  return res.status(400).json({
+    error:
+      error.message ||
+      "Something went wrong."
   });
 });
 
-/*
---------------------------------------------------
-START SERVER
---------------------------------------------------
-*/
+/* =========================
+   START SERVER
+========================= */
 
 app.listen(PORT, () => {
   console.log(
     `VideoHub running on port ${PORT}`
+  );
+
+  console.log(
+    `Upload directory: ${UPLOAD_DIR}`
+  );
+
+  console.log(
+    `Data file: ${DATA_FILE}`
   );
 });

@@ -1,12 +1,13 @@
 {
-  "name": "modern-video-hub",
-  "version": "1.0.0",
+  "name": "videohub",
+  "version": "2.0.0",
   "private": true,
-  "description": "Modern video upload and streaming website",
+  "description": "Modern VideoHub with IDrive e2 storage",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.879.0",
     "express": "^5.1.0",
     "multer": "^2.0.2"
   }

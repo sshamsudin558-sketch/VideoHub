@@ -1,28 +1,113 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
 const crypto = require("crypto");
+const path = require("path");
+
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand
+} = require("@aws-sdk/client-s3");
 
 const app = express();
 
-const PORT = process.env.PORT || 10000;
-
 /* =========================
-   DIRECTORIES
+   BASIC CONFIG
 ========================= */
+
+const PORT = process.env.PORT || 10000;
 
 const PUBLIC_DIR = path.join(__dirname, "public");
 
-const UPLOAD_DIR =
-  process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
+/* =========================
+   IDRIVE E2 CONFIG
+========================= */
 
-const DATA_DIR =
-  process.env.DATA_DIR || path.join(__dirname, "data");
+const S3_ACCESS_KEY_ID = "aabgP1PKuw0y0rhvl1UQG";
 
-const VIDEOS_FILE = path.join(DATA_DIR, "videos.json");
-const REVENUE_FILE = path.join(DATA_DIR, "revenue.json");
-const PAYMENTS_FILE = path.join(DATA_DIR, "payments.json");
+/*
+  IMPORTANT:
+  Do NOT put your old exposed Secret Key here.
+  Put your NEW Secret Key in Render Environment Variables.
+*/
+const S3_SECRET_ACCESS_KEY =
+  process.env.S3_SECRET_ACCESS_KEY || "PASTE_NEW_SECRET_HERE";
+
+const S3_BUCKET = "videohub-storage";
+const S3_REGION = "us-west-4";
+const S3_ENDPOINT = "https://s3.us-west-4.idrivee2.com";
+
+const s3 = new S3Client({
+  region: S3_REGION,
+  endpoint: S3_ENDPOINT,
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: S3_ACCESS_KEY_ID,
+    secretAccessKey: S3_SECRET_ACCESS_KEY
+  }
+});
+
+/* =========================
+   APP SETTINGS
+========================= */
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+app.use(express.static(PUBLIC_DIR));
+
+/*
+  We keep the uploaded file temporarily on disk
+  instead of RAM. This is safer for large videos.
+*/
+const upload = multer({
+  dest: path.join(__dirname, "tmp"),
+  limits: {
+    fileSize: 30 * 1024 * 1024 * 1024
+  },
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      "video/mp4",
+      "video/webm",
+      "video/ogg",
+      "video/quicktime",
+      "video/x-m4v"
+    ];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Only video files are allowed."));
+    }
+
+    cb(null, true);
+  }
+});
+
+/* =========================
+   TEMP FILE SUPPORT
+========================= */
+
+const fs = require("fs");
+
+const TMP_DIR = path.join(__dirname, "tmp");
+
+if (!fs.existsSync(TMP_DIR)) {
+  fs.mkdirSync(TMP_DIR, {
+    recursive: true
+  });
+}
+
+/* =========================
+   IN-MEMORY METADATA
+=========================
+
+   IMPORTANT:
+   On Render Free this data is not permanent.
+   For permanent data use PostgreSQL.
+========================= */
+
+const videos = new Map();
 
 /* =========================
    ADMIN
@@ -31,87 +116,33 @@ const PAYMENTS_FILE = path.join(DATA_DIR, "payments.json");
 const ADMIN_PASSWORD =
   process.env.ADMIN_PASSWORD || "VideoHub@2026#Shams";
 
-/* =========================
-   APP CONFIG
-========================= */
-
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
-
-/* =========================
-   CREATE DIRECTORIES
-========================= */
-
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-fs.mkdirSync(DATA_DIR, { recursive: true });
-
-function createJsonFile(file, defaultValue = []) {
-  if (!fs.existsSync(file)) {
-    fs.writeFileSync(
-      file,
-      JSON.stringify(defaultValue, null, 2),
-      "utf8"
-    );
-  }
-}
-
-createJsonFile(VIDEOS_FILE, []);
-createJsonFile(REVENUE_FILE, []);
-createJsonFile(PAYMENTS_FILE, []);
-
-/* =========================
-   JSON HELPERS
-========================= */
-
-function readJson(file) {
-  try {
-    const data = fs.readFileSync(file, "utf8");
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-function writeJson(file, data) {
-  fs.writeFileSync(
-    file,
-    JSON.stringify(data, null, 2),
-    "utf8"
-  );
-}
-
-/* =========================
-   ADMIN SESSION
-========================= */
-
-const sessions = new Map();
+const adminSessions = new Set();
 
 function createSession() {
   const token = crypto.randomBytes(32).toString("hex");
 
-  sessions.set(token, {
-    createdAt: Date.now()
-  });
+  adminSessions.add(token);
 
   return token;
 }
 
-function requireAdmin(req, res, next) {
+function isAdmin(req) {
   const auth = req.headers.authorization || "";
 
   if (!auth.startsWith("Bearer ")) {
-    return res.status(401).json({
-      success: false,
-      message: "Admin login required"
-    });
+    return false;
   }
 
   const token = auth.substring(7);
 
-  if (!sessions.has(token)) {
+  return adminSessions.has(token);
+}
+
+function requireAdmin(req, res, next) {
+  if (!isAdmin(req)) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired session"
+      message: "Admin authentication required."
     });
   }
 
@@ -119,60 +150,40 @@ function requireAdmin(req, res, next) {
 }
 
 /* =========================
-   MULTER
+   HELPERS
 ========================= */
 
-const allowedExtensions = [
-  ".mp4",
-  ".webm",
-  ".ogg",
-  ".mov",
-  ".m4v"
-];
+function makeId() {
+  return crypto.randomUUID();
+}
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, UPLOAD_DIR);
-  },
+function safeFileName(name) {
+  return path.basename(name).replace(/[^a-zA-Z0-9._-]/g, "_");
+}
 
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-
-    const safeName =
-      crypto.randomBytes(16).toString("hex") + ext;
-
-    cb(null, safeName);
-  }
-});
-
-const upload = multer({
-  storage,
-
-  limits: {
-    fileSize: 30 * 1024 * 1024 * 1024
-  },
-
-  fileFilter: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-
-    if (!allowedExtensions.includes(ext)) {
-      return cb(
-        new Error(
-          "Unsupported video format. Use MP4, WebM, OGG, MOV or M4V."
-        )
-      );
+function removeTempFile(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
-
-    cb(null, true);
+  } catch (error) {
+    console.error("Temporary file delete error:", error.message);
   }
-});
+}
 
 /* =========================
-   HOME
+   HEALTH
 ========================= */
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    service: "VideoHub",
+    storage: "IDrive e2",
+    bucket: S3_BUCKET,
+    region: S3_REGION,
+    time: new Date().toISOString()
+  });
 });
 
 /* =========================
@@ -185,7 +196,7 @@ app.post("/api/admin/login", (req, res) => {
   if (!password || password !== ADMIN_PASSWORD) {
     return res.status(401).json({
       success: false,
-      message: "Incorrect admin password"
+      message: "Invalid password."
     });
   }
 
@@ -201,10 +212,10 @@ app.post("/api/admin/login", (req, res) => {
    ADMIN STATUS
 ========================= */
 
-app.get("/api/admin/status", requireAdmin, (req, res) => {
+app.get("/api/admin/status", (req, res) => {
   res.json({
     success: true,
-    authenticated: true
+    admin: isAdmin(req)
   });
 });
 
@@ -212,48 +223,138 @@ app.get("/api/admin/status", requireAdmin, (req, res) => {
    ADMIN LOGOUT
 ========================= */
 
-app.post("/api/admin/logout", requireAdmin, (req, res) => {
-  const token = req.headers.authorization.substring(7);
+app.post("/api/admin/logout", (req, res) => {
+  const auth = req.headers.authorization || "";
 
-  sessions.delete(token);
+  if (auth.startsWith("Bearer ")) {
+    adminSessions.delete(auth.substring(7));
+  }
 
   res.json({
-    success: true,
-    message: "Logged out successfully"
+    success: true
   });
 });
 
 /* =========================
-   GET VIDEOS
+   UPLOAD VIDEO
+========================= */
+
+app.post(
+  "/api/upload",
+  upload.single("video"),
+  async (req, res) => {
+    let tempFile = null;
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "Please select a video."
+        });
+      }
+
+      tempFile = req.file.path;
+
+      const id = makeId();
+
+      const extension =
+        path.extname(req.file.originalname).toLowerCase();
+
+      const storageName =
+        `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${extension}`;
+
+      const objectKey = `videos/${storageName}`;
+
+      const stream = fs.createReadStream(tempFile);
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: objectKey,
+          Body: stream,
+          ContentType: req.file.mimetype,
+          Metadata: {
+            originalname: safeFileName(req.file.originalname)
+          }
+        })
+      );
+
+      const video = {
+        id,
+
+        title:
+          req.body.title ||
+          path.parse(req.file.originalname).name,
+
+        description:
+          req.body.description || "",
+
+        originalName:
+          req.file.originalname,
+
+        fileName:
+          storageName,
+
+        objectKey,
+
+        contentType:
+          req.file.mimetype,
+
+        size:
+          req.file.size,
+
+        views: 0,
+
+        likes: 0,
+
+        comments: [],
+
+        createdAt:
+          new Date().toISOString(),
+
+        updatedAt:
+          new Date().toISOString()
+      };
+
+      videos.set(id, video);
+
+      res.json({
+        success: true,
+        message: "Video uploaded successfully.",
+        video
+      });
+    } catch (error) {
+      console.error("UPLOAD ERROR:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Video upload failed.",
+        error: error.message
+      });
+    } finally {
+      if (tempFile) {
+        removeTempFile(tempFile);
+      }
+    }
+  }
+);
+
+/* =========================
+   GET ALL VIDEOS
 ========================= */
 
 app.get("/api/videos", (req, res) => {
-  const videos = readJson(VIDEOS_FILE);
-
-  const search =
-    String(req.query.search || "")
-      .trim()
-      .toLowerCase();
-
-  let result = videos;
-
-  if (search) {
-    result = videos.filter(video =>
-      `${video.title} ${video.description}`
-        .toLowerCase()
-        .includes(search)
+  const list = Array.from(videos.values())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt) -
+        new Date(a.createdAt)
     );
-  }
-
-  result.sort(
-    (a, b) =>
-      new Date(b.createdAt) -
-      new Date(a.createdAt)
-  );
 
   res.json({
     success: true,
-    videos: result
+    count: list.length,
+    videos: list
   });
 });
 
@@ -262,16 +363,12 @@ app.get("/api/videos", (req, res) => {
 ========================= */
 
 app.get("/api/videos/:id", (req, res) => {
-  const videos = readJson(VIDEOS_FILE);
-
-  const video = videos.find(
-    item => item.id === req.params.id
-  );
+  const video = videos.get(req.params.id);
 
   if (!video) {
     return res.status(404).json({
       success: false,
-      message: "Video not found"
+      message: "Video not found."
     });
   }
 
@@ -282,153 +379,53 @@ app.get("/api/videos/:id", (req, res) => {
 });
 
 /* =========================
-   UPLOAD VIDEO
+   STREAM VIDEO
 ========================= */
 
-app.post(
-  "/api/upload",
-  requireAdmin,
-  upload.single("video"),
-  (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "Please select a video"
-        });
-      }
+app.get("/videos/:id", async (req, res) => {
+  try {
+    const video = videos.get(req.params.id);
 
-      const title =
-        String(req.body.title || "")
-          .trim()
-          .substring(0, 200);
-
-      const description =
-        String(req.body.description || "")
-          .trim()
-          .substring(0, 5000);
-
-      if (!title) {
-        fs.unlinkSync(req.file.path);
-
-        return res.status(400).json({
-          success: false,
-          message: "Video title is required"
-        });
-      }
-
-      const videos = readJson(VIDEOS_FILE);
-
-      const video = {
-        id: crypto.randomUUID(),
-
-        title,
-
-        description,
-
-        filename: req.file.filename,
-
-        originalName: req.file.originalname,
-
-        size: req.file.size,
-
-        mimeType: req.file.mimetype,
-
-        views: 0,
-
-        likes: 0,
-
-        comments: [],
-
-        createdAt: new Date().toISOString(),
-
-        updatedAt: new Date().toISOString()
-      };
-
-      videos.push(video);
-
-      writeJson(VIDEOS_FILE, videos);
-
-      res.json({
-        success: true,
-        message: "Video uploaded successfully",
-        video
-      });
-
-    } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        success: false,
-        message: "Upload failed"
-      });
+    if (!video) {
+      return res.status(404).send("Video not found.");
     }
-  }
-);
 
-/* =========================
-   VIDEO STREAMING
-========================= */
+    const result = await s3.send(
+      new GetObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: video.objectKey
+      })
+    );
 
-app.get("/videos/:filename", (req, res) => {
-  const filename = path.basename(req.params.filename);
+    res.status(200);
 
-  const filePath = path.join(
-    UPLOAD_DIR,
-    filename
-  );
+    res.setHeader(
+      "Content-Type",
+      video.contentType || "video/mp4"
+    );
 
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send("Video not found");
-  }
-
-  const stat = fs.statSync(filePath);
-
-  const fileSize = stat.size;
-
-  const range = req.headers.range;
-
-  if (!range) {
-    res.writeHead(200, {
-      "Content-Length": fileSize,
-      "Content-Type": "video/mp4"
-    });
-
-    return fs.createReadStream(filePath).pipe(res);
-  }
-
-  const parts = range
-    .replace(/bytes=/, "")
-    .split("-");
-
-  const start = parseInt(parts[0], 10);
-
-  const end = parts[1]
-    ? parseInt(parts[1], 10)
-    : fileSize - 1;
-
-  const chunkSize = end - start + 1;
-
-  const stream = fs.createReadStream(
-    filePath,
-    {
-      start,
-      end
+    if (result.ContentLength) {
+      res.setHeader(
+        "Content-Length",
+        result.ContentLength
+      );
     }
-  );
 
-  res.writeHead(206, {
-    "Content-Range":
-      `bytes ${start}-${end}/${fileSize}`,
+    if (result.ETag) {
+      res.setHeader(
+        "ETag",
+        result.ETag
+      );
+    }
 
-    "Accept-Ranges": "bytes",
+    result.Body.pipe(res);
+  } catch (error) {
+    console.error("STREAM ERROR:", error);
 
-    "Content-Length": chunkSize,
-
-    "Content-Type": "video/mp4"
-  });
-
-  stream.pipe(res);
+    res.status(404).send(
+      "Unable to stream video."
+    );
+  }
 });
 
 /* =========================
@@ -436,26 +433,19 @@ app.get("/videos/:filename", (req, res) => {
 ========================= */
 
 app.post("/api/videos/:id/view", (req, res) => {
-  const videos = readJson(VIDEOS_FILE);
-
-  const video = videos.find(
-    item => item.id === req.params.id
-  );
+  const video = videos.get(req.params.id);
 
   if (!video) {
     return res.status(404).json({
       success: false,
-      message: "Video not found"
+      message: "Video not found."
     });
   }
 
-  video.views =
-    Number(video.views || 0) + 1;
+  video.views += 1;
 
   video.updatedAt =
     new Date().toISOString();
-
-  writeJson(VIDEOS_FILE, videos);
 
   res.json({
     success: true,
@@ -468,23 +458,19 @@ app.post("/api/videos/:id/view", (req, res) => {
 ========================= */
 
 app.post("/api/videos/:id/like", (req, res) => {
-  const videos = readJson(VIDEOS_FILE);
-
-  const video = videos.find(
-    item => item.id === req.params.id
-  );
+  const video = videos.get(req.params.id);
 
   if (!video) {
     return res.status(404).json({
       success: false,
-      message: "Video not found"
+      message: "Video not found."
     });
   }
 
-  video.likes =
-    Number(video.likes || 0) + 1;
+  video.likes += 1;
 
-  writeJson(VIDEOS_FILE, videos);
+  video.updatedAt =
+    new Date().toISOString();
 
   res.json({
     success: true,
@@ -499,22 +485,18 @@ app.post("/api/videos/:id/like", (req, res) => {
 app.get(
   "/api/videos/:id/comments",
   (req, res) => {
-    const videos = readJson(VIDEOS_FILE);
-
-    const video = videos.find(
-      item => item.id === req.params.id
-    );
+    const video = videos.get(req.params.id);
 
     if (!video) {
       return res.status(404).json({
         success: false,
-        message: "Video not found"
+        message: "Video not found."
       });
     }
 
     res.json({
       success: true,
-      comments: video.comments || []
+      comments: video.comments
     });
   }
 );
@@ -522,42 +504,34 @@ app.get(
 app.post(
   "/api/videos/:id/comments",
   (req, res) => {
-    const videos = readJson(VIDEOS_FILE);
-
-    const video = videos.find(
-      item => item.id === req.params.id
-    );
+    const video = videos.get(req.params.id);
 
     if (!video) {
       return res.status(404).json({
         success: false,
-        message: "Video not found"
+        message: "Video not found."
       });
     }
 
     const name =
-      String(req.body.name || "Guest")
+      String(req.body.name || "Anonymous")
         .trim()
-        .substring(0, 100);
+        .slice(0, 80);
 
     const text =
       String(req.body.text || "")
         .trim()
-        .substring(0, 1000);
+        .slice(0, 1000);
 
     if (!text) {
       return res.status(400).json({
         success: false,
-        message: "Comment is required"
+        message: "Comment is required."
       });
     }
 
-    if (!video.comments) {
-      video.comments = [];
-    }
-
     const comment = {
-      id: crypto.randomUUID(),
+      id: makeId(),
 
       name,
 
@@ -568,8 +542,6 @@ app.post(
     };
 
     video.comments.push(comment);
-
-    writeJson(VIDEOS_FILE, videos);
 
     res.json({
       success: true,
@@ -586,16 +558,12 @@ app.put(
   "/api/videos/:id",
   requireAdmin,
   (req, res) => {
-    const videos = readJson(VIDEOS_FILE);
-
-    const video = videos.find(
-      item => item.id === req.params.id
-    );
+    const video = videos.get(req.params.id);
 
     if (!video) {
       return res.status(404).json({
         success: false,
-        message: "Video not found"
+        message: "Video not found."
       });
     }
 
@@ -603,24 +571,21 @@ app.put(
       video.title =
         String(req.body.title)
           .trim()
-          .substring(0, 200);
+          .slice(0, 200);
     }
 
     if (req.body.description !== undefined) {
       video.description =
         String(req.body.description)
           .trim()
-          .substring(0, 5000);
+          .slice(0, 5000);
     }
 
     video.updatedAt =
       new Date().toISOString();
 
-    writeJson(VIDEOS_FILE, videos);
-
     res.json({
       success: true,
-      message: "Video updated",
       video
     });
   }
@@ -633,372 +598,240 @@ app.put(
 app.delete(
   "/api/videos/:id",
   requireAdmin,
-  (req, res) => {
-    const videos = readJson(VIDEOS_FILE);
+  async (req, res) => {
+    try {
+      const video = videos.get(req.params.id);
 
-    const index = videos.findIndex(
-      item => item.id === req.params.id
-    );
+      if (!video) {
+        return res.status(404).json({
+          success: false,
+          message: "Video not found."
+        });
+      }
 
-    if (index === -1) {
-      return res.status(404).json({
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: video.objectKey
+        })
+      );
+
+      videos.delete(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Video deleted successfully."
+      });
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
+
+      res.status(500).json({
         success: false,
-        message: "Video not found"
+        message: "Unable to delete video.",
+        error: error.message
       });
     }
+  }
+);
 
-    const video = videos[index];
+/* =========================
+   DOWNLOAD VIDEO
+========================= */
 
-    const filePath = path.join(
-      UPLOAD_DIR,
-      path.basename(video.filename)
-    );
+app.get(
+  "/api/videos/:id/download",
+  async (req, res) => {
+    try {
+      const video = videos.get(req.params.id);
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+      if (!video) {
+        return res.status(404).json({
+          success: false,
+          message: "Video not found."
+        });
+      }
+
+      const result = await s3.send(
+        new GetObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: video.objectKey
+        })
+      );
+
+      res.setHeader(
+        "Content-Type",
+        video.contentType || "application/octet-stream"
+      );
+
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${safeFileName(
+          video.originalName
+        )}"`
+      );
+
+      if (result.ContentLength) {
+        res.setHeader(
+          "Content-Length",
+          result.ContentLength
+        );
+      }
+
+      result.Body.pipe(res);
+    } catch (error) {
+      console.error("DOWNLOAD ERROR:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Download failed."
+      });
     }
+  }
+);
 
-    videos.splice(index, 1);
+/* =========================
+   STORAGE TEST
+========================= */
 
-    writeJson(VIDEOS_FILE, videos);
+app.get(
+  "/api/admin/storage-test",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      await s3.send(
+        new HeadObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: "videos/test"
+        })
+      );
 
-    /*
-      IMPORTANT:
-      Revenue is NOT deleted.
-      Payment history is NOT deleted.
-    */
+      res.json({
+        success: true,
+        storage: "Connected"
+      });
+    } catch (error) {
+      /*
+        NotFound means the bucket connection itself
+        may still be working.
+      */
+      if (
+        error.name === "NotFound" ||
+        error.$metadata?.httpStatusCode === 404
+      ) {
+        return res.json({
+          success: true,
+          storage: "Connected"
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        storage: "Connection failed",
+        error: error.message
+      });
+    }
+  }
+);
+
+/* =========================
+   ADMIN STATISTICS
+========================= */
+
+app.get(
+  "/api/admin/statistics",
+  requireAdmin,
+  (req, res) => {
+    const list =
+      Array.from(videos.values());
+
+    const totalViews =
+      list.reduce(
+        (sum, video) =>
+          sum + Number(video.views || 0),
+        0
+      );
+
+    const totalLikes =
+      list.reduce(
+        (sum, video) =>
+          sum + Number(video.likes || 0),
+        0
+      );
+
+    const totalComments =
+      list.reduce(
+        (sum, video) =>
+          sum +
+          Number(
+            video.comments?.length || 0
+          ),
+        0
+      );
+
+    const totalSize =
+      list.reduce(
+        (sum, video) =>
+          sum + Number(video.size || 0),
+        0
+      );
 
     res.json({
       success: true,
-      message:
-        "Video deleted. Revenue history preserved."
+
+      statistics: {
+        videos: list.length,
+
+        views: totalViews,
+
+        likes: totalLikes,
+
+        comments: totalComments,
+
+        storageBytes: totalSize,
+
+        storageGB:
+          totalSize /
+          (1024 * 1024 * 1024)
+      }
     });
   }
 );
 
 /* =========================
-   DOWNLOAD
-========================= */
-
-app.get(
-  "/api/videos/:id/download",
-  (req, res) => {
-    const videos = readJson(VIDEOS_FILE);
-
-    const video = videos.find(
-      item => item.id === req.params.id
-    );
-
-    if (!video) {
-      return res.status(404).json({
-        success: false,
-        message: "Video not found"
-      });
-    }
-
-    const filePath = path.join(
-      UPLOAD_DIR,
-      path.basename(video.filename)
-    );
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: "Video file not found"
-      });
-    }
-
-    res.download(
-      filePath,
-      video.originalName
-    );
-  }
-);
-
-/* =========================================================
    MONETIZATION
-========================================================= */
-
-/*
-  Revenue is stored separately from videos.
-
-  This means deleting a video DOES NOT delete
-  its previous revenue records.
-*/
-
-/* =========================
-   GET REVENUE
 ========================= */
 
 app.get(
   "/api/admin/monetization",
   requireAdmin,
   (req, res) => {
-    const revenue = readJson(REVENUE_FILE);
-    const payments = readJson(PAYMENTS_FILE);
-
-    const totalRevenue = revenue.reduce(
-      (sum, item) =>
-        sum + Number(item.amount || 0),
-      0
-    );
-
-    const pendingRevenue = revenue
-      .filter(item => item.status === "pending")
-      .reduce(
-        (sum, item) =>
-          sum + Number(item.amount || 0),
-        0
-      );
-
-    const paidRevenue = revenue
-      .filter(item => item.status === "paid")
-      .reduce(
-        (sum, item) =>
-          sum + Number(item.amount || 0),
-        0
-      );
-
-    const now = new Date();
-
-    const currentMonth =
-      now.getUTCMonth();
-
-    const currentYear =
-      now.getUTCFullYear();
-
-    const monthlyRevenue =
-      revenue
-        .filter(item => {
-          const date =
-            new Date(item.createdAt);
-
-          return (
-            date.getUTCMonth() === currentMonth &&
-            date.getUTCFullYear() === currentYear
-          );
-        })
-        .reduce(
-          (sum, item) =>
-            sum + Number(item.amount || 0),
-          0
-        );
-
     res.json({
       success: true,
 
-      statistics: {
-        totalRevenue,
-        monthlyRevenue,
-        pendingRevenue,
-        paidRevenue
-      },
+      monetization: {
+        enabled: false,
 
-      revenue,
+        provider: null,
 
-      payments
+        message:
+          "Connect an approved advertising provider before activating real monetization."
+      }
     });
   }
 );
 
 /* =========================
-   ADD REVENUE
+   SPA FALLBACK
 ========================= */
 
-app.post(
-  "/api/admin/revenue",
-  requireAdmin,
-  (req, res) => {
-    const {
-      videoId,
-      amount,
-      impressions,
-      source
-    } = req.body;
-
-    const revenueAmount =
-      Number(amount);
-
-    if (
-      !Number.isFinite(revenueAmount) ||
-      revenueAmount < 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid revenue amount"
-      });
-    }
-
-    const revenue =
-      readJson(REVENUE_FILE);
-
-    const record = {
-      id: crypto.randomUUID(),
-
-      videoId:
-        videoId || null,
-
-      amount:
-        Number(revenueAmount.toFixed(2)),
-
-      impressions:
-        Number(impressions || 0),
-
-      source:
-        source || "manual",
-
-      status: "pending",
-
-      createdAt:
-        new Date().toISOString()
-    };
-
-    revenue.push(record);
-
-    writeJson(
-      REVENUE_FILE,
-      revenue
-    );
-
-    res.json({
-      success: true,
-      revenue: record
-    });
-  }
-);
-
-/* =========================
-   MARK REVENUE PAID
-========================= */
-
-app.post(
-  "/api/admin/revenue/:id/paid",
-  requireAdmin,
-  (req, res) => {
-    const revenue =
-      readJson(REVENUE_FILE);
-
-    const item =
-      revenue.find(
-        x => x.id === req.params.id
-      );
-
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: "Revenue record not found"
-      });
-    }
-
-    item.status = "paid";
-
-    item.paidAt =
-      new Date().toISOString();
-
-    writeJson(
-      REVENUE_FILE,
-      revenue
-    );
-
-    const payments =
-      readJson(PAYMENTS_FILE);
-
-    payments.push({
-      id: crypto.randomUUID(),
-
-      revenueId: item.id,
-
-      amount: item.amount,
-
-      status: "paid",
-
-      createdAt:
-        new Date().toISOString()
-    });
-
-    writeJson(
-      PAYMENTS_FILE,
-      payments
-    );
-
-    res.json({
-      success: true,
-      message: "Revenue marked as paid"
-    });
-  }
-);
-
-/* =========================
-   PAYMENT HISTORY
-========================= */
-
-app.get(
-  "/api/admin/payments",
-  requireAdmin,
-  (req, res) => {
-    const payments =
-      readJson(PAYMENTS_FILE);
-
-    res.json({
-      success: true,
-      payments
-    });
-  }
-);
-
-/* =========================
-   VIDEO REVENUE
-========================= */
-
-app.get(
-  "/api/admin/videos-revenue",
-  requireAdmin,
-  (req, res) => {
-    const videos =
-      readJson(VIDEOS_FILE);
-
-    const revenue =
-      readJson(REVENUE_FILE);
-
-    const result =
-      videos.map(video => {
-        const videoRevenue =
-          revenue
-            .filter(
-              item =>
-                item.videoId === video.id
-            )
-            .reduce(
-              (sum, item) =>
-                sum +
-                Number(item.amount || 0),
-              0
-            );
-
-        return {
-          id: video.id,
-
-          title: video.title,
-
-          views:
-            Number(video.views || 0),
-
-          likes:
-            Number(video.likes || 0),
-
-          revenue:
-            Number(
-              videoRevenue.toFixed(2)
-            )
-        };
-      });
-
-    res.json({
-      success: true,
-      videos: result
-    });
-  }
-);
+app.get("*", (req, res) => {
+  res.sendFile(
+    path.join(
+      PUBLIC_DIR,
+      "index.html"
+    )
+  );
+});
 
 /* =========================
    ERROR HANDLER
@@ -1013,10 +846,7 @@ app.use(
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          error.code === "LIMIT_FILE_SIZE"
-            ? "Video file is larger than 30GB."
-            : error.message
+        message: error.message
       });
     }
 
@@ -1024,32 +854,8 @@ app.use(
       success: false,
       message:
         error.message ||
-        "Internal server error"
+        "Internal server error."
     });
-  }
-);
-
-/* =========================
-   STATIC WEBSITE
-========================= */
-
-app.use(
-  express.static(PUBLIC_DIR)
-);
-
-/* =========================
-   SPA FALLBACK
-========================= */
-
-app.get(
-  "*splat",
-  (req, res) => {
-    res.sendFile(
-      path.join(
-        PUBLIC_DIR,
-        "index.html"
-      )
-    );
   }
 );
 
@@ -1063,10 +869,10 @@ app.listen(PORT, () => {
   );
 
   console.log(
-    `Upload directory: ${UPLOAD_DIR}`
+    `IDrive e2 bucket: ${S3_BUCKET}`
   );
 
   console.log(
-    `Data directory: ${DATA_DIR}`
+    `IDrive e2 region: ${S3_REGION}`
   );
 });

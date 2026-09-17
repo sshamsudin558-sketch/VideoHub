@@ -17,6 +17,8 @@ const DATA_DIR =
 const DATA_FILE = path.join(DATA_DIR, "videos.json");
 
 const PUBLIC_DIR = path.join(__dirname, "public");
+//ADMIN_PASSWORD 
+const ADMIN_PASSWORD = "VideoHub@2026#Shams";
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024 * 1024;
 

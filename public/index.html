@@ -1,1797 +1,2743 @@
-:root {
-  --bg: #070b11;
-  --bg2: #0b1119;
-  --card: #101722;
-  --card2: #0d141e;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  --text: #f4f7fb;
-  --muted: #8d99aa;
-  --muted2: #687486;
+  <title>VideoHub</title>
 
-  --border: rgba(255,255,255,0.09);
-  --borderLight: rgba(255,255,255,0.16);
+  <link rel="stylesheet" href="/style.css">
+</head>
 
-  --white: #ffffff;
-  --black: #05070a;
+<body>
 
-  --danger: #ff5d67;
+  <header class="header">
+    <div class="container headerInner">
 
-  --radius: 16px;
+      <a href="/" class="logo">
+        <span class="logoIcon">▶</span>
+        <span>VideoHub</span>
+      </a>
 
-  --shadow:
-    0 20px 60px rgba(0,0,0,0.35);
-}
+      <div class="headerActions">
 
+        <button
+          id="adminLoginButton"
+          class="headerButton">
+          🔐 Admin
+        </button>
 
-* {
-  box-sizing: border-box;
-}
+        <button
+          id="uploadButton"
+          class="primaryButton hidden">
+          ⬆ Upload
+        </button>
 
+        <button
+          id="logoutButton"
+          class="secondaryButton hidden">
+          Logout
+        </button>
 
-html {
-  scroll-behavior: smooth;
-}
+      </div>
 
+    </div>
+  </header>
 
-body {
-  margin: 0;
 
-  min-height: 100vh;
+  <main>
 
-  background:
-    radial-gradient(
-      circle at 20% 0%,
-      rgba(70,90,120,0.16),
-      transparent 35%
-    ),
-    radial-gradient(
-      circle at 90% 10%,
-      rgba(50,70,100,0.12),
-      transparent 30%
-    ),
-    var(--bg);
+    <section class="hero">
 
-  color: var(--text);
+      <div class="container heroContent">
 
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
+        <span class="heroBadge">
+          MODERN VIDEO PLATFORM
+        </span>
 
+        <h1>
+          Your videos.
+          <span>Your platform.</span>
+        </h1>
 
-body.modalOpen {
-  overflow: hidden;
-}
+        <p>
+          Upload, watch, share and manage your videos
+          in one modern video hub.
+        </p>
 
+        <div class="heroButtons">
 
-button,
-input,
-textarea {
-  font: inherit;
-}
+          <button
+            id="browseButton"
+            class="primaryButton">
+            ▶ Browse Videos
+          </button>
 
+          <button
+            id="heroUploadButton"
+            class="secondaryButton hidden">
+            ⬆ Upload Video
+          </button>
 
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
+        </div>
 
+      </div>
 
-button {
-  border: 0;
-}
+    </section>
 
 
-a {
-  color: inherit;
-}
+    <section
+      id="library"
+      class="librarySection">
 
+      <div class="container">
 
-.hidden {
-  display: none !important;
-}
+        <div class="sectionHeader">
 
+          <div>
+            <div class="sectionLabel">
+              LIBRARY
+            </div>
 
-.container {
-  width: min(
-    1180px,
-    calc(100% - 32px)
-  );
+            <h2>
+              Latest Videos
+            </h2>
+          </div>
 
-  margin: 0 auto;
-}
+          <div
+            id="videoCount"
+            class="videoCount">
+            0 videos
+          </div>
 
+        </div>
 
-/* HEADER */
 
-.header {
-  position: sticky;
+        <div class="searchBox">
 
-  top: 0;
+          <span class="searchIcon">
+            🔎
+          </span>
 
-  z-index: 50;
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search videos...">
 
-  border-bottom:
-    1px solid var(--border);
+        </div>
 
-  background:
-    rgba(7,11,17,0.82);
 
-  backdrop-filter:
-    blur(18px);
-}
+        <div
+          id="videoGrid"
+          class="videoGrid">
 
+          <div class="loading">
+            Loading videos...
+          </div>
 
-.headerInner {
-  min-height: 72px;
+        </div>
 
-  display: flex;
+      </div>
 
-  align-items: center;
+    </section>
 
-  justify-content: space-between;
+  </main>
 
-  gap: 20px;
-}
 
+  <footer class="footer">
 
-.logo {
-  display: inline-flex;
+    <div class="container footerInner">
 
-  align-items: center;
+      <div>
 
-  gap: 10px;
+        <strong>
+          VideoHub
+        </strong>
 
-  text-decoration: none;
+        <span>
+          Modern video hosting platform
+        </span>
 
-  color: var(--text);
+      </div>
 
-  font-size: 19px;
+      <div>
+        © 2026 VideoHub
+      </div>
 
-  font-weight: 800;
+    </div>
 
-  letter-spacing: -0.4px;
-}
+  </footer>
 
 
-.logoIcon {
-  width: 36px;
+  <!-- ADMIN LOGIN -->
 
-  height: 36px;
+  <div
+    id="loginModal"
+    class="modal hidden">
 
-  display: grid;
+    <div
+      class="modalOverlay"
+      data-close-login>
+    </div>
 
-  place-items: center;
+    <div class="modalCard">
 
-  border-radius: 10px;
+      <button
+        class="modalClose"
+        data-close-login>
+        ×
+      </button>
 
-  background: var(--white);
+      <div class="modalIcon">
+        🔐
+      </div>
 
-  color: var(--black);
+      <h2>
+        Admin Login
+      </h2>
 
-  font-size: 14px;
+      <p class="modalDescription">
+        Login to upload and manage your videos.
+      </p>
 
-  box-shadow:
-    0 8px 30px rgba(255,255,255,0.08);
-}
+      <form id="loginForm">
 
+        <label for="adminPassword">
+          Password
+        </label>
 
-.headerActions {
-  display: flex;
+        <input
+          id="adminPassword"
+          type="password"
+          placeholder="Enter admin password"
+          required>
 
-  align-items: center;
+        <button
+          type="submit"
+          class="primaryButton fullButton">
+          Login
+        </button>
 
-  gap: 10px;
-}
+        <div
+          id="loginMessage"
+          class="formMessage">
+        </div>
 
+      </form>
 
-.headerButton,
-.primaryButton,
-.secondaryButton,
-.dangerButton {
-  min-height: 42px;
+    </div>
 
-  padding: 0 17px;
+  </div>
 
-  border-radius: 11px;
 
-  cursor: pointer;
+  <!-- UPLOAD -->
 
-  text-decoration: none;
+  <div
+    id="uploadModal"
+    class="modal hidden">
 
-  display: inline-flex;
+    <div
+      class="modalOverlay"
+      data-close-upload>
+    </div>
 
-  align-items: center;
+    <div class="modalCard">
 
-  justify-content: center;
+      <button
+        class="modalClose"
+        data-close-upload>
+        ×
+      </button>
 
-  gap: 7px;
+      <div class="modalIcon">
+        ⬆
+      </div>
 
-  transition:
-    transform .18s ease,
-    background .18s ease,
-    border-color .18s ease,
-    opacity .18s ease;
-}
+      <h2>
+        Upload Video
+      </h2>
 
+      <p class="modalDescription">
+        Upload your video to VideoHub.
+        Maximum file size: 30GB.
+      </p>
 
-.headerButton {
-  border: 1px solid var(--borderLight);
+      <form id="uploadForm">
 
-  background: rgba(255,255,255,0.04);
+        <label for="videoTitle">
+          Video Title
+        </label>
 
-  color: var(--text);
+        <input
+          id="videoTitle"
+          type="text"
+          maxlength="200"
+          placeholder="Enter video title">
 
-  font-size: 13px;
+        <label for="videoDescription">
+          Description
+        </label>
 
-  font-weight: 650;
-}
+        <textarea
+          id="videoDescription"
+          maxlength="2000"
+          placeholder="Write a description..."></textarea>
 
+        <label for="videoFile">
+          Video File
+        </label>
 
-.primaryButton {
-  background: var(--white);
+        <input
+          id="videoFile"
+          type="file"
+          accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v"
+          required>
 
-  color: var(--black);
+        <div
+          id="selectedFile"
+          class="selectedFile hidden">
 
-  font-weight: 750;
-}
+          <strong id="selectedFileName">
+            File
+          </strong>
 
+          <span id="selectedFileSize">
+            0 MB
+          </span>
 
-.secondaryButton {
-  border: 1px solid var(--borderLight);
+        </div>
 
-  background: rgba(255,255,255,0.04);
 
-  color: var(--text);
+        <div
+          id="uploadProgressArea"
+          class="uploadProgressArea hidden">
 
-  font-weight: 650;
-}
+          <div class="progressTop">
 
+            <strong id="uploadPercent">
+              0%
+            </strong>
 
-.dangerButton {
-  background:
-    rgba(255,93,103,0.10);
+            <span id="uploadSpeed">
+              0 MB/s
+            </span>
 
-  border:
-    1px solid rgba(255,93,103,0.3);
+          </div>
 
-  color:
-    #ff8990;
+          <div class="progressBar">
 
-  font-weight: 700;
-}
+            <div
+              id="progressBarFill"
+              class="progressBarFill">
+            </div>
 
+          </div>
 
-.headerButton:hover,
-.primaryButton:hover,
-.secondaryButton:hover,
-.dangerButton:hover {
-  transform: translateY(-1px);
-}
+          <div class="progressInfo">
 
+            <span id="uploadedAmount">
+              0 MB
+            </span>
 
-.primaryButton:hover {
-  background: #e9edf3;
-}
+            <span id="totalAmount">
+              0 MB
+            </span>
 
+          </div>
 
-.primaryButton:disabled {
-  opacity: .5;
+          <div
+            id="uploadStatus"
+            class="uploadStatus">
+            Preparing upload...
+          </div>
 
-  cursor: not-allowed;
+        </div>
 
-  transform: none;
-}
 
+        <div
+          id="uploadMessage"
+          class="formMessage">
+        </div>
 
-/* HERO */
 
-.hero {
-  position: relative;
+        <div class="uploadButtons">
 
-  overflow: hidden;
+          <button
+            type="button"
+            id="cancelUploadButton"
+            class="secondaryButton">
+            Cancel
+          </button>
 
-  border-bottom:
-    1px solid var(--border);
-}
+          <button
+            type="submit"
+            id="startUploadButton"
+            class="primaryButton">
+            Upload Video
+          </button>
 
+        </div>
 
-.hero::before {
-  content: "";
+      </form>
 
-  position: absolute;
+    </div>
 
-  width: 520px;
+  </div>
 
-  height: 520px;
 
-  top: -300px;
+  <!-- VIDEO PLAYER -->
 
-  left: 50%;
+  <div
+    id="videoModal"
+    class="modal videoModal hidden">
 
-  transform: translateX(-50%);
+    <div
+      class="modalOverlay"
+      data-close-video>
+    </div>
 
-  border-radius: 50%;
+    <div class="videoModalCard">
 
-  background:
-    rgba(255,255,255,0.05);
+      <button
+        class="modalClose"
+        data-close-video>
+        ×
+      </button>
 
-  filter: blur(80px);
+      <div class="largeVideoWrapper">
 
-  pointer-events: none;
-}
+        <video
+          id="largeVideo"
+          controls
+          playsinline>
+        </video>
 
+      </div>
 
-.heroContent {
-  position: relative;
 
-  padding:
-    105px 0 95px;
-}
+      <div class="videoDetails">
 
+        <h2 id="videoModalTitle">
+          Video
+        </h2>
 
-.heroBadge {
-  display: inline-flex;
+        <div
+          id="videoModalStats"
+          class="largeVideoStats">
+        </div>
 
-  padding:
-    7px 11px;
+        <p
+          id="videoModalDescription"
+          class="largeVideoDescription">
+        </p>
 
-  border:
-    1px solid var(--borderLight);
 
-  border-radius: 999px;
+        <div class="videoActions largeActions">
 
-  background:
-    rgba(255,255,255,0.035);
+          <button
+            id="modalLikeButton"
+            class="actionButton">
+            ❤️ Like
+          </button>
 
-  color: var(--muted);
+          <button
+            id="modalShareButton"
+            class="actionButton">
+            🔗 Share
+          </button>
 
-  font-size: 11px;
+          <a
+            id="modalDownloadButton"
+            class="actionButton downloadAction"
+            href="#"
+            download>
+            ⬇ Download
+          </a>
 
-  font-weight: 750;
+        </div>
 
-  letter-spacing: .9px;
 
-  text-transform: uppercase;
-}
+        <div class="commentsSection">
 
+          <h3>
+            Comments
+          </h3>
 
-.hero h1 {
-  max-width: 850px;
+          <form
+            id="commentForm"
+            class="commentForm">
 
-  margin:
-    20px 0 18px;
+            <input
+              id="commentName"
+              type="text"
+              maxlength="50"
+              placeholder="Your name"
+              required>
 
-  font-size:
-    clamp(42px, 7vw, 82px);
+            <input
+              id="commentText"
+              type="text"
+              maxlength="500"
+              placeholder="Write a comment..."
+              required>
 
-  line-height: .98;
+            <button
+              type="submit"
+              class="primaryButton">
+              Send
+            </button>
 
-  letter-spacing: -4px;
-}
+          </form>
 
 
-.hero h1 span {
-  display: block;
+          <div
+            id="commentList"
+            class="commentList">
 
-  color: #8d98a9;
-}
+            <div class="noComments">
+              No comments yet.
+            </div>
 
+          </div>
 
-.hero p {
-  max-width: 650px;
+        </div>
 
-  margin: 0;
 
-  color: var(--muted);
+        <div
+          id="adminVideoActions"
+          class="adminVideoActions hidden">
 
-  font-size: 17px;
+          <button
+            id="editVideoButton"
+            class="secondaryButton">
+            ✏ Edit
+          </button>
 
-  line-height: 1.7;
-}
+          <button
+            id="deleteVideoButton"
+            class="dangerButton">
+            🗑 Delete
+          </button>
 
+        </div>
 
-.heroButtons {
-  display: flex;
+      </div>
 
-  flex-wrap: wrap;
+    </div>
 
-  gap: 10px;
+  </div>
 
-  margin-top: 30px;
-}
 
+  <!-- EDIT VIDEO -->
 
-/* LIBRARY */
+  <div
+    id="editModal"
+    class="modal hidden">
 
-.librarySection {
-  padding: 75px 0 100px;
-}
+    <div
+      class="modalOverlay"
+      data-close-edit>
+    </div>
 
+    <div class="modalCard">
 
-.sectionHeader {
-  display: flex;
+      <button
+        class="modalClose"
+        data-close-edit>
+        ×
+      </button>
 
-  align-items: end;
+      <div class="modalIcon">
+        ✏
+      </div>
 
-  justify-content: space-between;
+      <h2>
+        Edit Video
+      </h2>
 
-  gap: 20px;
+      <form id="editForm">
 
-  margin-bottom: 24px;
-}
+        <label for="editTitle">
+          Title
+        </label>
 
+        <input
+          id="editTitle"
+          type="text"
+          maxlength="200"
+          required>
 
-.sectionLabel {
-  color: var(--muted2);
+        <label for="editDescription">
+          Description
+        </label>
 
-  font-size: 11px;
+        <textarea
+          id="editDescription"
+          maxlength="2000"></textarea>
 
-  font-weight: 800;
+        <button
+          type="submit"
+          class="primaryButton fullButton">
+          Save Changes
+        </button>
 
-  letter-spacing: 1.5px;
-}
+        <div
+          id="editMessage"
+          class="formMessage">
+        </div>
 
+      </form>
 
-.sectionHeader h2 {
-  margin:
-    8px 0 0;
+    </div>
 
-  font-size: 31px;
+  </div>
 
-  letter-spacing: -1.2px;
-}
 
+  <div
+    id="toast"
+    class="toast">
+  </div>
 
-.videoCount {
-  color: var(--muted);
 
-  font-size: 13px;
-}
+  <script>
 
+    const state = {
+      videos: [],
+      currentVideo: null,
+      isAdmin: false,
+      uploadXHR: null
+    };
 
-/* SEARCH */
 
-.searchBox {
-  position: relative;
+    const $ = (id) =>
+      document.getElementById(id);
 
-  max-width: 550px;
 
-  margin-bottom: 30px;
-}
+    function escapeHtml(value) {
 
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-.searchBox input {
-  width: 100%;
+    }
 
-  min-height: 50px;
 
-  padding:
-    0 17px 0 45px;
+    function formatBytes(bytes) {
 
-  border:
-    1px solid var(--border);
+      if (!bytes) return "0 MB";
 
-  border-radius: 13px;
+      const units = [
+        "B",
+        "KB",
+        "MB",
+        "GB",
+        "TB"
+      ];
 
-  outline: none;
+      let size = Number(bytes);
+      let index = 0;
 
-  background:
-    rgba(255,255,255,0.035);
+      while (
+        size >= 1024 &&
+        index < units.length - 1
+      ) {
 
-  color: var(--text);
+        size /= 1024;
+        index++;
 
-  transition:
-    border-color .2s ease,
-    box-shadow .2s ease;
-}
+      }
 
+      return `${size.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
 
-.searchBox input::placeholder {
-  color: var(--muted2);
-}
+    }
 
 
-.searchBox input:focus {
-  border-color:
-    rgba(255,255,255,0.25);
+    function formatDate(date) {
 
-  box-shadow:
-    0 0 0 4px
-    rgba(255,255,255,0.035);
-}
+      try {
 
+        return new Date(date)
+          .toLocaleDateString();
 
-.searchIcon {
-  position: absolute;
+      } catch {
 
-  left: 16px;
+        return "";
 
-  top: 50%;
+      }
 
-  transform: translateY(-50%);
+    }
 
-  color: var(--muted);
 
-  pointer-events: none;
-}
+    function showToast(message) {
 
+      const toast = $("toast");
 
-/* VIDEO GRID */
+      toast.textContent = message;
 
-.videoGrid {
-  display: grid;
+      toast.classList.add("toastShow");
 
-  grid-template-columns:
-    repeat(3, minmax(0,1fr));
+      setTimeout(() => {
 
-  gap: 20px;
-}
+        toast.classList.remove("toastShow");
 
+      }, 3000);
 
-.videoCard {
-  overflow: hidden;
+    }
 
-  border:
-    1px solid var(--border);
 
-  border-radius:
-    var(--radius);
+    function openModal(element) {
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.025),
-      rgba(255,255,255,0.01)
-    );
+      element.classList.remove("hidden");
 
-  box-shadow:
-    0 10px 35px
-    rgba(0,0,0,0.12);
+      document.body.classList.add("modalOpen");
 
-  transition:
-    transform .2s ease,
-    border-color .2s ease,
-    box-shadow .2s ease;
-}
+    }
 
 
-.videoCard:hover {
-  transform:
-    translateY(-4px);
+    function closeModal(element) {
 
-  border-color:
-    var(--borderLight);
+      element.classList.add("hidden");
 
-  box-shadow:
-    var(--shadow);
-}
+      if (
+        document.querySelectorAll(
+          ".modal:not(.hidden)"
+        ).length === 0
+      ) {
 
+        document.body.classList.remove(
+          "modalOpen"
+        );
 
-/* VIDEO PREVIEW */
+      }
 
-.videoPreview {
-  position: relative;
+    }
 
-  aspect-ratio: 16 / 9;
 
-  overflow: hidden;
+    async function loadAdminStatus() {
 
-  background: #05080d;
+      try {
 
-  cursor: pointer;
-}
+        const response = await fetch(
+          "/api/admin/status"
+        );
 
+        const data = await response.json();
 
-.videoPreview video {
-  width: 100%;
+        state.isAdmin =
+          data.loggedIn === true;
 
-  height: 100%;
+        updateAdminUI();
 
-  display: block;
+      } catch {
 
-  object-fit: cover;
+        state.isAdmin = false;
 
-  background: #05080d;
-}
+        updateAdminUI();
 
+      }
 
-.videoPreview::after {
-  content: "";
+    }
 
-  position: absolute;
 
-  inset: 0;
+    function updateAdminUI() {
 
-  background:
-    linear-gradient(
-      180deg,
-      transparent 45%,
-      rgba(0,0,0,0.45)
-    );
+      $("adminLoginButton")
+        .classList.toggle(
+          "hidden",
+          state.isAdmin
+        );
 
-  pointer-events: none;
-}
+      $("uploadButton")
+        .classList.toggle(
+          "hidden",
+          !state.isAdmin
+        );
 
+      $("logoutButton")
+        .classList.toggle(
+          "hidden",
+          !state.isAdmin
+        );
 
-.playOverlay {
-  position: absolute;
+      $("heroUploadButton")
+        .classList.toggle(
+          "hidden",
+          !state.isAdmin
+        );
 
-  z-index: 2;
+      $("adminVideoActions")
+        .classList.toggle(
+          "hidden",
+          !state.isAdmin
+        );
 
-  left: 50%;
+    }
 
-  top: 50%;
 
-  transform:
-    translate(-50%,-50%);
+    async function loadVideos() {
 
-  width: 54px;
+      const grid = $("videoGrid");
 
-  height: 54px;
+      grid.innerHTML =
+        '<div class="loading">Loading videos...</div>';
 
-  display: grid;
+      try {
 
-  place-items: center;
+        const response = await fetch(
+          "/api/videos"
+        );
 
-  border:
-    1px solid
-    rgba(255,255,255,0.35);
+        if (!response.ok) {
+          throw new Error(
+            "Could not load videos."
+          );
+        }
 
-  border-radius: 50%;
+        state.videos =
+          await response.json();
 
-  background:
-    rgba(0,0,0,0.55);
+        renderVideos();
 
-  backdrop-filter:
-    blur(10px);
+        if (state.currentVideo) {
 
-  color: white;
+          const updated =
+            state.videos.find(
+              (video) =>
+                video.id ===
+                state.currentVideo.id
+            );
 
-  font-size: 18px;
+          if (updated) {
 
-  transition:
-    transform .2s ease,
-    background .2s ease;
-}
+            state.currentVideo = updated;
 
+            updateModalVideoInfo(
+              updated
+            );
 
-.videoPreview:hover
-.playOverlay {
-  transform:
-    translate(-50%,-50%)
-    scale(1.08);
+          }
 
-  background:
-    rgba(255,255,255,0.18);
-}
+        }
 
+      } catch (error) {
 
-.videoType {
-  position: absolute;
+        grid.innerHTML = `
+          <div class="errorBox">
+            ${escapeHtml(error.message)}
+          </div>
+        `;
 
-  z-index: 3;
+      }
 
-  left: 12px;
+    }
 
-  bottom: 12px;
 
-  padding:
-    5px 8px;
+    function renderVideos() {
 
-  border-radius: 6px;
+      const grid = $("videoGrid");
 
-  background:
-    rgba(0,0,0,0.65);
+      const search =
+        $("searchInput")
+          .value
+          .trim()
+          .toLowerCase();
 
-  color: white;
 
-  font-size: 9px;
+      const filtered =
+        state.videos.filter((video) => {
 
-  font-weight: 800;
+          return (
+            video.title
+              .toLowerCase()
+              .includes(search) ||
 
-  letter-spacing: 1px;
-}
+            video.description
+              .toLowerCase()
+              .includes(search)
+          );
 
+        });
 
-/* CARD BODY */
 
-.videoCardBody {
-  padding: 17px;
-}
+      $("videoCount").textContent =
+        `${filtered.length} video${filtered.length === 1 ? "" : "s"}`;
 
 
-.videoTitle {
-  margin: 0;
+      if (!filtered.length) {
 
-  color: var(--text);
+        grid.innerHTML = `
+          <div class="emptyState">
+            <div class="emptyIcon">🎬</div>
+            <h3>No videos found</h3>
+            <p>
+              There are no videos matching your search.
+            </p>
+          </div>
+        `;
 
-  font-size: 17px;
+        return;
 
-  line-height: 1.35;
+      }
 
-  letter-spacing: -.25px;
 
-  cursor: pointer;
-}
+      grid.innerHTML =
+        filtered.map((video) => {
 
+          const liked =
+            localStorage.getItem(
+              `videohub_liked_${video.id}`
+            ) === "1";
 
-.videoTitle:hover {
-  color: #cbd4df;
-}
 
+          return `
+            <article class="videoCard">
 
-.videoDescription {
-  height: 40px;
+              <div
+                class="videoPreview"
+                data-open-video="${video.id}">
 
-  overflow: hidden;
+                <video
+                  src="${escapeHtml(video.url)}"
+                  muted
+                  preload="metadata"
+                  playsinline>
+                </video>
 
-  margin:
-    9px 0 13px;
+                <div class="playOverlay">
+                  ▶
+                </div>
 
-  color: var(--muted);
+                <div class="videoType">
+                  VIDEO
+                </div>
 
-  font-size: 12px;
+              </div>
 
-  line-height: 1.65;
-}
 
+              <div class="videoCardBody">
 
-.videoMeta {
-  display: flex;
+                <h3
+                  class="videoTitle"
+                  data-open-video="${video.id}">
+                  ${escapeHtml(video.title)}
+                </h3>
 
-  flex-wrap: wrap;
+                <p class="videoDescription">
+                  ${escapeHtml(
+                    video.description ||
+                    "No description."
+                  )}
+                </p>
 
-  gap: 10px;
+                <div class="videoMeta">
 
-  color: var(--muted2);
+                  <span>
+                    👁 ${Number(video.views || 0)}
+                  </span>
 
-  font-size: 10px;
-}
+                  <span>
+                    ❤️ ${Number(video.likes || 0)}
+                  </span>
 
+                  <span>
+                    ${formatDate(video.createdAt)}
+                  </span>
 
-/* ACTIONS */
+                </div>
 
-.videoActions {
-  display: flex;
 
-  flex-wrap: wrap;
+                <div class="videoActions">
 
-  gap: 7px;
+                  <button
+                    class="actionButton"
+                    data-like-id="${video.id}">
+                    ${liked ? "❤️ Liked" : "❤️ Like"}
+                    ${Number(video.likes || 0)}
+                  </button>
 
-  margin-top: 15px;
-}
+                  <button
+                    class="actionButton"
+                    data-comment-id="${video.id}">
+                    💬 ${Number(video.commentsCount || 0)}
+                  </button>
 
+                  <button
+                    class="actionButton"
+                    data-share-id="${video.id}">
+                    🔗 Share
+                  </button>
 
-.actionButton {
-  min-height: 36px;
+                  <a
+                    class="actionButton downloadAction"
+                    href="/api/videos/${encodeURIComponent(video.id)}/download"
+                    download>
+                    ⬇ Download
+                  </a>
 
-  padding:
-    0 10px;
+                </div>
 
-  display: inline-flex;
+              </div>
 
-  align-items: center;
+            </article>
+          `;
 
-  justify-content: center;
+        }).join("");
 
-  gap: 5px;
+    }
 
-  border:
-    1px solid var(--border);
 
-  border-radius: 9px;
+    async function likeVideo(id) {
 
-  background:
-    #111924;
+      const video =
+        state.videos.find(
+          (item) => item.id === id
+        );
 
-  color:
-    #b8c1ce;
+      if (!video) return;
 
-  text-decoration: none;
 
-  font-size: 11px;
+      const storageKey =
+        `videohub_liked_${id}`;
 
-  cursor: pointer;
+      const liked =
+        localStorage.getItem(storageKey) === "1";
 
-  transition:
-    .18s ease;
-}
+      const action =
+        liked ? "unlike" : "like";
 
 
-.actionButton:hover {
-  background:
-    #1a2330;
+      try {
 
-  border-color:
-    var(--borderLight);
+        const response = await fetch(
+          `/api/videos/${encodeURIComponent(id)}/like`,
+          {
+            method: "POST",
 
-  color:
-    white;
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-  transform:
-    translateY(-1px);
-}
+            body: JSON.stringify({
+              action
+            })
+          }
+        );
 
 
-.downloadAction {
-  margin-left: auto;
-}
+        const data =
+          await response.json();
 
 
-/* EMPTY */
+        if (!response.ok) {
 
-.emptyState {
-  padding:
-    70px 20px;
+          throw new Error(
+            data.error ||
+            "Could not update like."
+          );
 
-  border:
-    1px dashed var(--border);
+        }
 
-  border-radius:
-    var(--radius);
 
-  text-align: center;
-}
+        video.likes =
+          Number(data.likes || 0);
 
 
-.emptyIcon {
-  font-size: 40px;
+        if (action === "like") {
 
-  margin-bottom: 14px;
-}
+          localStorage.setItem(
+            storageKey,
+            "1"
+          );
 
+        } else {
 
-.emptyState h3 {
-  margin: 0 0 8px;
-}
+          localStorage.removeItem(
+            storageKey
+          );
 
+        }
 
-.emptyState p {
-  margin: 0;
 
-  color: var(--muted);
+        renderVideos();
 
-  font-size: 13px;
-}
+        if (
+          state.currentVideo &&
+          state.currentVideo.id === id
+        ) {
 
+          state.currentVideo =
+            video;
 
-/* LOADING */
+          updateModalVideoInfo(
+            video
+          );
 
-.loading {
-  padding: 40px 0;
+        }
 
-  color: var(--muted);
+      } catch (error) {
 
-  text-align: center;
-}
+        showToast(error.message);
 
+      }
 
-/* ERROR */
+    }
 
-.errorBox {
-  grid-column: 1 / -1;
 
-  padding: 30px;
+    async function shareVideo(video) {
 
-  border:
-    1px solid
-    rgba(255,93,103,0.25);
+      const shareUrl =
+        `${window.location.origin}/watch/${video.id}`;
 
-  border-radius:
-    var(--radius);
 
-  background:
-    rgba(255,93,103,0.05);
+      try {
 
-  color:
-    #ff9aa0;
+        if (
+          navigator.share
+        ) {
 
-  text-align: center;
-}
+          await navigator.share({
 
+            title: video.title,
 
-/* MODALS */
+            text:
+              video.description ||
+              "Watch this video on VideoHub.",
 
-.modal {
-  position: fixed;
+            url: shareUrl
 
-  z-index: 100;
+          });
 
-  inset: 0;
+          return;
 
-  display: grid;
+        }
 
-  place-items: center;
 
-  padding: 20px;
-}
+        await navigator.clipboard.writeText(
+          shareUrl
+        );
 
+        showToast(
+          "Video link copied."
+        );
 
-.modalOverlay {
-  position: absolute;
+      } catch (error) {
 
-  inset: 0;
+        if (
+          error &&
+          error.name === "AbortError"
+        ) {
 
-  background:
-    rgba(0,0,0,0.78);
+          return;
 
-  backdrop-filter:
-    blur(10px);
-}
+        }
 
 
-.modalCard,
-.videoModalCard {
-  position: relative;
+        try {
 
-  z-index: 2;
+          const textarea =
+            document.createElement("textarea");
 
-  width: min(
-    520px,
-    100%
-  );
+          textarea.value = shareUrl;
 
-  max-height:
-    calc(100vh - 40px);
+          document.body.appendChild(
+            textarea
+          );
 
-  overflow-y: auto;
+          textarea.select();
 
-  border:
-    1px solid var(--borderLight);
+          document.execCommand(
+            "copy"
+          );
 
-  border-radius:
-    20px;
+          textarea.remove();
 
-  background:
-    #0c121b;
+          showToast(
+            "Video link copied."
+          );
 
-  box-shadow:
-    0 30px 100px
-    rgba(0,0,0,0.55);
+        } catch {
 
-  padding: 28px;
-}
+          showToast(
+            shareUrl
+          );
 
+        }
 
-.modalClose {
-  position: absolute;
+      }
 
-  z-index: 5;
+    }
 
-  top: 15px;
 
-  right: 15px;
+    async function openVideo(
+      id,
+      changeUrl = true
+    ) {
 
-  width: 36px;
+      let video =
+        state.videos.find(
+          (item) => item.id === id
+        );
 
-  height: 36px;
 
-  border:
-    1px solid var(--border);
+      if (!video) {
 
-  border-radius: 10px;
+        try {
 
-  background:
-    rgba(255,255,255,0.04);
+          const response =
+            await fetch(
+              `/api/videos/${encodeURIComponent(id)}`
+            );
 
-  color:
-    var(--muted);
+          if (!response.ok) {
+            throw new Error(
+              "Video not found."
+            );
+          }
 
-  cursor: pointer;
+          video =
+            await response.json();
 
-  font-size: 22px;
-}
+        } catch (error) {
 
+          showToast(
+            error.message
+          );
 
-.modalIcon {
-  width: 52px;
+          return;
 
-  height: 52px;
+        }
 
-  display: grid;
+      }
 
-  place-items: center;
 
-  margin-bottom: 18px;
+      state.currentVideo =
+        video;
 
-  border-radius: 14px;
 
-  background:
-    rgba(255,255,255,0.06);
+      if (changeUrl) {
 
-  font-size: 22px;
-}
+        history.pushState(
+          {},
+          "",
+          `/watch/${id}`
+        );
 
+      }
 
-.modalCard h2 {
-  margin:
-    0 0 8px;
 
-  font-size: 25px;
-
-  letter-spacing: -.7px;
-}
-
-
-.modalDescription {
-  margin:
-    0 0 24px;
-
-  color:
-    var(--muted);
-
-  font-size: 13px;
-
-  line-height: 1.6;
-}
-
-
-/* FORMS */
-
-.modalCard label {
-  display: block;
-
-  margin:
-    17px 0 8px;
-
-  color:
-    #c7d0dc;
-
-  font-size: 12px;
-
-  font-weight: 700;
-}
-
-
-.modalCard input,
-.modalCard textarea {
-  width: 100%;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 10px;
-
-  outline: none;
-
-  background:
-    #080e15;
-
-  color:
-    var(--text);
-
-  padding:
-    13px 14px;
-
-  transition:
-    border-color .2s ease;
-}
-
-
-.modalCard input {
-  min-height: 45px;
-}
-
-
-.modalCard textarea {
-  min-height: 110px;
-
-  resize: vertical;
-}
-
-
-.modalCard input:focus,
-.modalCard textarea:focus {
-  border-color:
-    rgba(255,255,255,0.25);
-}
-
-
-.modalCard input[type="file"] {
-  padding: 10px;
-}
-
-
-.fullButton {
-  width: 100%;
-
-  margin-top: 20px;
-}
-
-
-.formMessage {
-  min-height: 20px;
-
-  margin-top: 12px;
-
-  color: var(--muted);
-
-  font-size: 12px;
-}
-
-
-.selectedFile {
-  display: flex;
-
-  justify-content: space-between;
-
-  gap: 15px;
-
-  margin-top: 12px;
-
-  padding: 12px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 10px;
-
-  background:
-    rgba(255,255,255,0.03);
-
-  color: var(--muted);
-
-  font-size: 11px;
-
-  word-break: break-word;
-}
-
-
-.selectedFile strong {
-  color: var(--text);
-}
-
-
-/* UPLOAD PROGRESS */
-
-.uploadProgressArea {
-  margin-top: 20px;
-
-  padding: 16px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 13px;
-
-  background:
-    rgba(255,255,255,0.025);
-}
-
-
-.progressTop,
-.progressInfo {
-  display: flex;
-
-  justify-content: space-between;
-
-  gap: 10px;
-
-  color: var(--muted);
-
-  font-size: 11px;
-}
-
-
-.progressTop strong {
-  color: var(--text);
-}
-
-
-.progressBar {
-  height: 8px;
-
-  margin:
-    12px 0;
-
-  overflow: hidden;
-
-  border-radius: 999px;
-
-  background:
-    rgba(255,255,255,0.08);
-}
-
-
-.progressBarFill {
-  width: 0%;
-
-  height: 100%;
-
-  border-radius: inherit;
-
-  background:
-    var(--white);
-
-  transition:
-    width .15s linear;
-}
-
-
-.uploadStatus {
-  margin-top: 12px;
-
-  color:
-    var(--muted2);
-
-  font-size: 11px;
-}
-
-
-.uploadButtons {
-  display: flex;
-
-  justify-content: flex-end;
-
-  gap: 9px;
-
-  margin-top: 20px;
-}
-
-
-/* LARGE VIDEO */
-
-.videoModal {
-  padding: 12px;
-}
-
-
-.videoModalCard {
-  width:
-    min(1050px, 100%);
-
-  padding: 0;
-
-  overflow: hidden;
-}
-
-
-.largeVideoWrapper {
-  width: 100%;
-
-  aspect-ratio: 16 / 9;
-
-  background:
-    #000;
-}
-
-
-.largeVideoWrapper video {
-  width: 100%;
-
-  height: 100%;
-
-  display: block;
-
-  object-fit: contain;
-}
-
-
-.videoDetails {
-  padding: 24px;
-}
-
-
-.videoDetails h2 {
-  margin:
-    0 0 10px;
-
-  font-size: 27px;
-
-  letter-spacing: -.8px;
-}
-
-
-.largeVideoStats {
-  color:
-    var(--muted2);
-
-  font-size: 11px;
-}
-
-
-.largeVideoDescription {
-  margin:
-    16px 0 0;
-
-  color:
-    var(--muted);
-
-  line-height: 1.7;
-
-  font-size: 13px;
-}
-
-
-.largeActions {
-  margin-top: 18px;
-}
-
-
-.commentsSection {
-  margin-top: 25px;
-
-  padding-top: 22px;
-
-  border-top:
-    1px solid var(--border);
-}
-
-
-.commentsSection h3 {
-  margin: 0 0 15px;
-
-  font-size: 17px;
-}
-
-
-.commentForm {
-  display: grid;
-
-  grid-template-columns:
-    150px 1fr auto;
-
-  gap: 8px;
-}
-
-
-.commentForm input {
-  min-width: 0;
-
-  min-height: 42px;
-
-  padding: 0 12px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 9px;
-
-  outline: none;
-
-  background:
-    #080e15;
-
-  color:
-    var(--text);
-}
-
-
-.commentForm input:focus {
-  border-color:
-    rgba(255,255,255,0.25);
-}
-
-
-.commentList {
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 10px;
-
-  max-height: 330px;
-
-  overflow-y: auto;
-
-  margin-top: 16px;
-}
-
-
-.comment {
-  display: flex;
-
-  gap: 10px;
-
-  padding: 12px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 11px;
-
-  background:
-    rgba(255,255,255,0.025);
-}
-
-
-.commentAvatar {
-  width: 34px;
-
-  height: 34px;
-
-  flex:
-    0 0 34px;
-
-  display: grid;
-
-  place-items: center;
-
-  border-radius: 50%;
-
-  background:
-    #182230;
-}
-
-
-.commentContent {
-  min-width: 0;
-}
-
-
-.commentContent strong {
-  font-size: 12px;
-}
-
-
-.commentContent p {
-  margin:
-    4px 0;
-
-  color:
-    var(--muted);
-
-  font-size: 12px;
-
-  line-height: 1.55;
-
-  word-break: break-word;
-}
-
-
-.commentContent small {
-  color:
-    var(--muted2);
-
-  font-size: 9px;
-}
-
-
-.noComments {
-  padding: 20px;
-
-  border:
-    1px dashed var(--border);
-
-  border-radius: 10px;
-
-  color:
-    var(--muted);
-
-  text-align: center;
-
-  font-size: 12px;
-}
-
-
-.adminVideoActions {
-  display: flex;
-
-  gap: 9px;
-
-  margin-top: 24px;
-
-  padding-top: 20px;
-
-  border-top:
-    1px solid var(--border);
-}
-
-
-/* TOAST */
-
-.toast {
-  position: fixed;
-
-  z-index: 200;
-
-  left: 50%;
-
-  bottom: 24px;
-
-  transform:
-    translate(-50%, 20px);
-
-  opacity: 0;
-
-  max-width:
-    calc(100% - 32px);
-
-  padding:
-    12px 16px;
-
-  border:
-    1px solid var(--borderLight);
-
-  border-radius: 10px;
-
-  background:
-    #151d28;
-
-  color:
-    var(--text);
-
-  box-shadow:
-    0 15px 50px
-    rgba(0,0,0,0.35);
-
-  font-size: 12px;
-
-  transition:
-    .25s ease;
-}
-
-
-.toastShow {
-  opacity: 1;
-
-  transform:
-    translate(-50%, 0);
-}
-
-
-/* FOOTER */
-
-.footer {
-  border-top:
-    1px solid var(--border);
-
-  background:
-    rgba(255,255,255,0.015);
-}
-
-
-.footerInner {
-  min-height: 100px;
-
-  display: flex;
-
-  justify-content: space-between;
-
-  align-items: center;
-
-  gap: 20px;
-
-  color:
-    var(--muted2);
-
-  font-size: 11px;
-}
-
-
-.footerInner div:first-child {
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 4px;
-}
-
-
-.footerInner strong {
-  color:
-    var(--text);
-
-  font-size: 13px;
-}
-
-
-/* TABLET */
-
-@media (max-width: 950px) {
-
-  .videoGrid {
-    grid-template-columns:
-      repeat(2, minmax(0,1fr));
-  }
-
-  .heroContent {
-    padding:
-      80px 0;
-  }
-
-}
-
-
-/* MOBILE */
-
-@media (max-width: 650px) {
-
-  .container {
-    width:
-      min(
-        100% - 22px,
-        1180px
+      updateModalVideoInfo(
+        video
       );
-  }
 
 
-  .headerInner {
-    min-height: 62px;
-  }
+      openModal(
+        $("videoModal")
+      );
 
 
-  .logo {
-    font-size: 17px;
-  }
+      loadComments(id);
 
 
-  .logoIcon {
-    width: 32px;
+      const viewKey =
+        `videohub_viewed_${id}`;
 
-    height: 32px;
-  }
 
+      if (
+        !localStorage.getItem(viewKey)
+      ) {
 
-  .headerButton,
-  .primaryButton,
-  .secondaryButton {
-    min-height: 40px;
+        try {
 
-    padding:
-      0 12px;
+          const response =
+            await fetch(
+              `/api/videos/${encodeURIComponent(id)}/view`,
+              {
+                method: "POST"
+              }
+            );
 
-    font-size: 11px;
-  }
 
+          if (response.ok) {
 
-  .heroContent {
-    padding:
-      65px 0 60px;
-  }
+            const data =
+              await response.json();
 
 
-  .hero h1 {
-    font-size:
-      clamp(40px, 14vw, 65px);
+            localStorage.setItem(
+              viewKey,
+              "1"
+            );
 
-    letter-spacing: -3px;
-  }
 
+            video.views =
+              Number(data.views || video.views || 0);
 
-  .hero p {
-    font-size: 14px;
-  }
 
+            const listVideo =
+              state.videos.find(
+                (item) => item.id === id
+              );
 
-  .sectionHeader {
-    align-items:
-      flex-start;
 
-    flex-direction:
-      column;
+            if (listVideo) {
 
-    gap: 8px;
-  }
+              listVideo.views =
+                video.views;
 
+            }
 
-  .sectionHeader h2 {
-    font-size: 26px;
-  }
 
+            updateModalVideoInfo(
+              video
+            );
 
-  .videoGrid {
-    grid-template-columns:
-      1fr;
+            renderVideos();
 
-    gap: 15px;
-  }
+          }
 
+        } catch {}
 
-  .videoDescription {
-    height: auto;
+      }
 
-    max-height: 42px;
-  }
+    }
 
 
-  .videoActions {
-    display: grid;
+    function updateModalVideoInfo(
+      video
+    ) {
 
-    grid-template-columns:
-      repeat(2, minmax(0,1fr));
-  }
+      $("videoModalTitle")
+        .textContent =
+        video.title;
 
 
-  .actionButton {
-    width: 100%;
-  }
+      $("videoModalDescription")
+        .textContent =
+        video.description ||
+        "No description.";
 
 
-  .downloadAction {
-    margin-left: 0;
-  }
+      $("videoModalStats")
+        .textContent =
+        `👁 ${Number(video.views || 0)} views • ❤️ ${Number(video.likes || 0)} likes • ${formatBytes(video.size)}`;
 
 
-  .modal {
-    padding: 10px;
-  }
+      $("largeVideo")
+        .src =
+        video.url;
 
 
-  .modalCard {
-    padding: 22px;
+      $("modalDownloadButton")
+        .href =
+        `/api/videos/${encodeURIComponent(video.id)}/download`;
 
-    border-radius: 16px;
-  }
 
+      const liked =
+        localStorage.getItem(
+          `videohub_liked_${video.id}`
+        ) === "1";
 
-  .videoModal {
-    padding: 0;
-  }
 
+      $("modalLikeButton")
+        .textContent =
+        `${liked ? "❤️ Liked" : "❤️ Like"} ${Number(video.likes || 0)}`;
 
-  .videoModalCard {
-    width: 100%;
 
-    max-height: 100vh;
+      $("adminVideoActions")
+        .classList.toggle(
+          "hidden",
+          !state.isAdmin
+        );
 
-    height: 100%;
+    }
 
-    border-radius: 0;
-  }
 
+    async function loadComments(
+      videoId
+    ) {
 
-  .videoDetails {
-    padding: 18px;
-  }
+      const list =
+        $("commentList");
 
 
-  .videoDetails h2 {
-    font-size: 22px;
-  }
+      list.innerHTML =
+        '<div class="loading">Loading comments...</div>';
 
 
-  .commentForm {
-    grid-template-columns:
-      1fr;
-  }
+      try {
 
+        const response =
+          await fetch(
+            `/api/videos/${encodeURIComponent(videoId)}/comments`
+          );
 
-  .commentForm .primaryButton {
-    width: 100%;
-  }
 
+        if (!response.ok) {
 
-  .adminVideoActions {
-    display: grid;
+          throw new Error(
+            "Could not load comments."
+          );
 
-    grid-template-columns:
-      1fr 1fr;
-  }
+        }
 
 
-  .footerInner {
-    min-height: 85px;
+        const comments =
+          await response.json();
 
-    flex-direction:
-      column;
 
-    justify-content: center;
+        if (!comments.length) {
 
-    text-align: center;
-  }
+          list.innerHTML =
+            '<div class="noComments">No comments yet.</div>';
 
-}
+          return;
 
+        }
 
-/* REDUCED MOTION */
 
-@media (prefers-reduced-motion: reduce) {
+        list.innerHTML =
+          comments.map((comment) => {
 
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
+            const firstLetter =
+              (
+                comment.name ||
+                "U"
+              )
+                .charAt(0)
+                .toUpperCase();
 
-    transition: none !important;
 
-    animation: none !important;
-  }
+            return `
+              <div class="comment">
 
-}
+                <div class="commentAvatar">
+                  ${escapeHtml(firstLetter)}
+                </div>
+
+                <div class="commentContent">
+
+                  <strong>
+                    ${escapeHtml(comment.name)}
+                  </strong>
+
+                  <p>
+                    ${escapeHtml(comment.text)}
+                  </p>
+
+                  <small>
+                    ${formatDate(comment.createdAt)}
+                  </small>
+
+                </div>
+
+              </div>
+            `;
+
+          }).join("");
+
+      } catch (error) {
+
+        list.innerHTML = `
+          <div class="noComments">
+            ${escapeHtml(error.message)}
+          </div>
+        `;
+
+      }
+
+    }
+
+
+    function closeVideo(
+      changeUrl = true
+    ) {
+
+      $("largeVideo").pause();
+
+      $("largeVideo").removeAttribute(
+        "src"
+      );
+
+      $("largeVideo").load();
+
+
+      closeModal(
+        $("videoModal")
+      );
+
+
+      state.currentVideo =
+        null;
+
+
+      if (
+        changeUrl &&
+        location.pathname.startsWith(
+          "/watch/"
+        )
+      ) {
+
+        history.pushState(
+          {},
+          "",
+          "/"
+        );
+
+      }
+
+    }
+
+
+    $("browseButton")
+      .addEventListener(
+        "click",
+        () => {
+
+          $("library")
+            .scrollIntoView({
+              behavior: "smooth"
+            });
+
+        }
+      );
+
+
+    $("heroUploadButton")
+      .addEventListener(
+        "click",
+        () => {
+
+          openModal(
+            $("uploadModal")
+          );
+
+        }
+      );
+
+
+    $("uploadButton")
+      .addEventListener(
+        "click",
+        () => {
+
+          openModal(
+            $("uploadModal")
+          );
+
+        }
+      );
+
+
+    $("adminLoginButton")
+      .addEventListener(
+        "click",
+        () => {
+
+          $("loginMessage")
+            .textContent = "";
+
+          $("adminPassword")
+            .value = "";
+
+          openModal(
+            $("loginModal")
+          );
+
+        }
+      );
+
+
+    $("logoutButton")
+      .addEventListener(
+        "click",
+        async () => {
+
+          try {
+
+            await fetch(
+              "/api/admin/logout",
+              {
+                method: "POST"
+              }
+            );
+
+          } finally {
+
+            state.isAdmin =
+              false;
+
+            updateAdminUI();
+
+            showToast(
+              "Logged out."
+            );
+
+            if (
+              state.currentVideo
+            ) {
+
+              $("adminVideoActions")
+                .classList.add(
+                  "hidden"
+                );
+
+            }
+
+          }
+
+        }
+      );
+
+
+    $("loginForm")
+      .addEventListener(
+        "submit",
+        async (event) => {
+
+          event.preventDefault();
+
+
+          const password =
+            $("adminPassword").value;
+
+
+          $("loginMessage")
+            .textContent =
+            "Logging in...";
+
+
+          try {
+
+            const response =
+              await fetch(
+                "/api/admin/login",
+                {
+                  method: "POST",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json"
+                  },
+
+                  body: JSON.stringify({
+                    password
+                  })
+                }
+              );
+
+
+            const data =
+              await response.json();
+
+
+            if (!response.ok) {
+
+              throw new Error(
+                data.error ||
+                "Login failed."
+              );
+
+            }
+
+
+            state.isAdmin =
+              true;
+
+
+            updateAdminUI();
+
+
+            closeModal(
+              $("loginModal")
+            );
+
+
+            showToast(
+              "Admin login successful."
+            );
+
+          } catch (error) {
+
+            $("loginMessage")
+              .textContent =
+              error.message;
+
+          }
+
+        }
+      );
+
+
+    $("videoFile")
+      .addEventListener(
+        "change",
+        () => {
+
+          const file =
+            $("videoFile").files[0];
+
+
+          if (!file) {
+
+            $("selectedFile")
+              .classList.add(
+                "hidden"
+              );
+
+            return;
+
+          }
+
+
+          const maxSize =
+            30 *
+            1024 *
+            1024 *
+            1024;
+
+
+          if (file.size > maxSize) {
+
+            $("uploadMessage")
+              .textContent =
+              "File is larger than 30GB.";
+
+            $("videoFile").value = "";
+
+            $("selectedFile")
+              .classList.add(
+                "hidden"
+              );
+
+            return;
+
+          }
+
+
+          $("uploadMessage")
+            .textContent = "";
+
+
+          $("selectedFileName")
+            .textContent =
+            file.name;
+
+
+          $("selectedFileSize")
+            .textContent =
+            formatBytes(file.size);
+
+
+          $("selectedFile")
+            .classList.remove(
+              "hidden"
+            );
+
+        }
+      );
+
+
+    $("uploadForm")
+      .addEventListener(
+        "submit",
+        (event) => {
+
+          event.preventDefault();
+
+          startUpload();
+
+        }
+      );
+
+
+    function startUpload() {
+
+      if (!state.isAdmin) {
+
+        showToast(
+          "Admin login required."
+        );
+
+        return;
+
+      }
+
+
+      const file =
+        $("videoFile").files[0];
+
+
+      if (!file) {
+
+        $("uploadMessage")
+          .textContent =
+          "Please select a video.";
+
+        return;
+
+      }
+
+
+      const formData =
+        new FormData();
+
+
+      formData.append(
+        "title",
+        $("videoTitle").value
+      );
+
+
+      formData.append(
+        "description",
+        $("videoDescription").value
+      );
+
+
+      formData.append(
+        "video",
+        file
+      );
+
+
+      const xhr =
+        new XMLHttpRequest();
+
+
+      state.uploadXHR =
+        xhr;
+
+
+      const startedAt =
+        performance.now();
+
+
+      $("uploadProgressArea")
+        .classList.remove(
+          "hidden"
+        );
+
+
+      $("startUploadButton")
+        .disabled = true;
+
+
+      $("uploadStatus")
+        .textContent =
+        "Uploading...";
+
+
+      xhr.open(
+        "POST",
+        "/api/upload"
+      );
+
+
+      xhr.responseType =
+        "json";
+
+
+      xhr.upload.onprogress =
+        (event) => {
+
+          if (!event.lengthComputable) {
+            return;
+          }
+
+
+          const percent =
+            (event.loaded /
+              event.total) *
+            100;
+
+
+          const seconds =
+            (
+              performance.now() -
+              startedAt
+            ) / 1000;
+
+
+          const speed =
+            seconds > 0
+              ? event.loaded /
+                seconds
+              : 0;
+
+
+          $("uploadPercent")
+            .textContent =
+            `${percent.toFixed(1)}%`;
+
+
+          $("progressBarFill")
+            .style.width =
+            `${percent}%`;
+
+
+          $("uploadedAmount")
+            .textContent =
+            formatBytes(
+              event.loaded
+            );
+
+
+          $("totalAmount")
+            .textContent =
+            formatBytes(
+              event.total
+            );
+
+
+          $("uploadSpeed")
+            .textContent =
+            `${formatBytes(speed)}/s`;
+
+        };
+
+
+      xhr.onload =
+        async () => {
+
+          state.uploadXHR =
+            null;
+
+
+          $("startUploadButton")
+            .disabled = false;
+
+
+          if (
+            xhr.status >= 200 &&
+            xhr.status < 300
+          ) {
+
+            $("uploadPercent")
+              .textContent =
+              "100%";
+
+
+            $("progressBarFill")
+              .style.width =
+              "100%";
+
+
+            $("uploadStatus")
+              .textContent =
+              "Upload complete.";
+
+
+            showToast(
+              "Video uploaded successfully."
+            );
+
+
+            const newVideo =
+              xhr.response?.video;
+
+
+            resetUploadForm();
+
+
+            closeModal(
+              $("uploadModal")
+            );
+
+
+            await loadVideos();
+
+
+            if (
+              newVideo &&
+              newVideo.id
+            ) {
+
+              await openVideo(
+                newVideo.id
+              );
+
+            }
+
+          } else {
+
+            const message =
+              xhr.response?.error ||
+              "Upload failed.";
+
+
+            $("uploadStatus")
+              .textContent =
+              message;
+
+
+            $("uploadMessage")
+              .textContent =
+              message;
+
+          }
+
+        };
+
+
+      xhr.onerror =
+        () => {
+
+          state.uploadXHR =
+            null;
+
+          $("startUploadButton")
+            .disabled = false;
+
+          $("uploadStatus")
+            .textContent =
+            "Network error.";
+
+          $("uploadMessage")
+            .textContent =
+            "Network error during upload.";
+
+        };
+
+
+      xhr.onabort =
+        () => {
+
+          state.uploadXHR =
+            null;
+
+          $("startUploadButton")
+            .disabled = false;
+
+          $("uploadStatus")
+            .textContent =
+            "Upload cancelled.";
+
+        };
+
+
+      xhr.send(
+        formData
+      );
+
+    }
+
+
+    $("cancelUploadButton")
+      .addEventListener(
+        "click",
+        () => {
+
+          if (
+            state.uploadXHR
+          ) {
+
+            state.uploadXHR.abort();
+
+            return;
+
+          }
+
+
+          closeModal(
+            $("uploadModal")
+          );
+
+        }
+      );
+
+
+    function resetUploadForm() {
+
+      $("uploadForm").reset();
+
+      $("selectedFile")
+        .classList.add(
+          "hidden"
+        );
+
+      $("uploadProgressArea")
+        .classList.add(
+          "hidden"
+        );
+
+      $("progressBarFill")
+        .style.width =
+        "0%";
+
+      $("uploadPercent")
+        .textContent =
+        "0%";
+
+      $("uploadSpeed")
+        .textContent =
+        "0 MB/s";
+
+      $("uploadedAmount")
+        .textContent =
+        "0 MB";
+
+      $("totalAmount")
+        .textContent =
+        "0 MB";
+
+      $("uploadStatus")
+        .textContent =
+        "Preparing upload...";
+
+      $("uploadMessage")
+        .textContent = "";
+
+    }
+
+
+    $("searchInput")
+      .addEventListener(
+        "input",
+        renderVideos
+      );
+
+
+    $("videoGrid")
+      .addEventListener(
+        "click",
+        async (event) => {
+
+          const openButton =
+            event.target.closest(
+              "[data-open-video]"
+            );
+
+
+          if (openButton) {
+
+            await openVideo(
+              openButton.dataset.openVideo
+            );
+
+            return;
+
+          }
+
+
+          const likeButton =
+            event.target.closest(
+              "[data-like-id]"
+            );
+
+
+          if (likeButton) {
+
+            await likeVideo(
+              likeButton.dataset.likeId
+            );
+
+            return;
+
+          }
+
+
+          const commentButton =
+            event.target.closest(
+              "[data-comment-id]"
+            );
+
+
+          if (commentButton) {
+
+            await openVideo(
+              commentButton.dataset.commentId
+            );
+
+            return;
+
+          }
+
+
+          const shareButton =
+            event.target.closest(
+              "[data-share-id]"
+            );
+
+
+          if (shareButton) {
+
+            const video =
+              state.videos.find(
+                (item) =>
+                  item.id ===
+                  shareButton.dataset.shareId
+              );
+
+
+            if (video) {
+
+              await shareVideo(
+                video
+              );
+
+            }
+
+          }
+
+        }
+      );
+
+
+    $("modalLikeButton")
+      .addEventListener(
+        "click",
+        async () => {
+
+          if (
+            state.currentVideo
+          ) {
+
+            await likeVideo(
+              state.currentVideo.id
+            );
+
+          }
+
+        }
+      );
+
+
+    $("modalShareButton")
+      .addEventListener(
+        "click",
+        async () => {
+
+          if (
+            state.currentVideo
+          ) {
+
+            await shareVideo(
+              state.currentVideo
+            );
+
+          }
+
+        }
+      );
+
+
+    $("commentForm")
+      .addEventListener(
+        "submit",
+        async (event) => {
+
+          event.preventDefault();
+
+
+          if (
+            !state.currentVideo
+          ) {
+
+            return;
+
+          }
+
+
+          const name =
+            $("commentName")
+              .value
+              .trim();
+
+
+          const text =
+            $("commentText")
+              .value
+              .trim();
+
+
+          if (!name || !text) {
+
+            showToast(
+              "Enter your name and comment."
+            );
+
+            return;
+
+          }
+
+
+          try {
+
+            const response =
+              await fetch(
+                `/api/videos/${encodeURIComponent(state.currentVideo.id)}/comments`,
+                {
+                  method: "POST",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json"
+                  },
+
+                  body: JSON.stringify({
+                    name,
+                    text
+                  })
+                }
+              );
+
+
+            const data =
+              await response.json();
+
+
+            if (!response.ok) {
+
+              throw new Error(
+                data.error ||
+                "Could not add comment."
+              );
+
+            }
+
+
+            localStorage.setItem(
+              "videohub_comment_name",
+              name
+            );
+
+
+            $("commentText")
+              .value = "";
+
+
+            await loadComments(
+              state.currentVideo.id
+            );
+
+
+            const video =
+              state.videos.find(
+                (item) =>
+                  item.id ===
+                  state.currentVideo.id
+              );
+
+
+            if (video) {
+
+              video.commentsCount =
+                Number(
+                  video.commentsCount || 0
+                ) + 1;
+
+              state.currentVideo =
+                video;
+
+            }
+
+
+            showToast(
+              "Comment added."
+            );
+
+
+            renderVideos();
+
+          } catch (error) {
+
+            showToast(
+              error.message
+            );
+
+          }
+
+        }
+      );
+
+
+    $("editVideoButton")
+      .addEventListener(
+        "click",
+        () => {
+
+          if (
+            !state.currentVideo
+          ) return;
+
+
+          $("editTitle")
+            .value =
+            state.currentVideo.title;
+
+
+          $("editDescription")
+            .value =
+            state.currentVideo.description ||
+            "";
+
+
+          $("editMessage")
+            .textContent = "";
+
+
+          openModal(
+            $("editModal")
+          );
+
+        }
+      );
+
+
+    $("editForm")
+      .addEventListener(
+        "submit",
+        async (event) => {
+
+          event.preventDefault();
+
+
+          if (
+            !state.currentVideo
+          ) return;
+
+
+          const title =
+            $("editTitle")
+              .value
+              .trim();
+
+
+          const description =
+            $("editDescription")
+              .value
+              .trim();
+
+
+          try {
+
+            const response =
+              await fetch(
+                `/api/videos/${encodeURIComponent(state.currentVideo.id)}`,
+                {
+                  method: "PUT",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json"
+                  },
+
+                  body: JSON.stringify({
+                    title,
+                    description
+                  })
+                }
+              );
+
+
+            const data =
+              await response.json();
+
+
+            if (!response.ok) {
+
+              throw new Error(
+                data.error ||
+                "Could not edit video."
+              );
+
+            }
+
+
+            closeModal(
+              $("editModal")
+            );
+
+
+            await loadVideos();
+
+
+            const updated =
+              state.videos.find(
+                (video) =>
+                  video.id ===
+                  state.currentVideo.id
+              );
+
+
+            if (updated) {
+
+              state.currentVideo =
+                updated;
+
+              updateModalVideoInfo(
+                updated
+              );
+
+            }
+
+
+            showToast(
+              "Video updated."
+            );
+
+          } catch (error) {
+
+            $("editMessage")
+              .textContent =
+              error.message;
+
+          }
+
+        }
+      );
+
+
+    $("deleteVideoButton")
+      .addEventListener(
+        "click",
+        async () => {
+
+          if (
+            !state.currentVideo
+          ) return;
+
+
+          const confirmed =
+            confirm(
+              "Are you sure you want to delete this video?"
+            );
+
+
+          if (!confirmed) {
+            return;
+          }
+
+
+          try {
+
+            const response =
+              await fetch(
+                `/api/videos/${encodeURIComponent(state.currentVideo.id)}`,
+                {
+                  method: "DELETE"
+                }
+              );
+
+
+            const data =
+              await response.json();
+
+
+            if (!response.ok) {
+
+              throw new Error(
+                data.error ||
+                "Could not delete video."
+              );
+
+            }
+
+
+            closeVideo();
+
+
+            await loadVideos();
+
+
+            showToast(
+              "Video deleted."
+            );
+
+          } catch (error) {
+
+            showToast(
+              error.message
+            );
+
+          }
+
+        }
+      );
+
+
+    document.addEventListener(
+      "click",
+      (event) => {
+
+        if (
+          event.target.matches(
+            "[data-close-login]"
+          )
+        ) {
+
+          closeModal(
+            $("loginModal")
+          );
+
+        }
+
+
+        if (
+          event.target.matches(
+            "[data-close-upload]"
+          )
+        ) {
+
+          if (
+            state.uploadXHR
+          ) {
+
+            showToast(
+              "Cancel the upload first."
+            );
+
+          } else {
+
+            closeModal(
+              $("uploadModal")
+            );
+
+          }
+
+        }
+
+
+        if (
+          event.target.matches(
+            "[data-close-video]"
+          )
+        ) {
+
+          closeVideo();
+
+        }
+
+
+        if (
+          event.target.matches(
+            "[data-close-edit]"
+          )
+        ) {
+
+          closeModal(
+            $("editModal")
+          );
+
+        }
+
+      }
+    );
+
+
+    document.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (
+          event.key !== "Escape"
+        ) return;
+
+
+        if (
+          !$("videoModal")
+            .classList.contains("hidden")
+        ) {
+
+          closeVideo();
+
+        }
+
+      }
+    );
+
+
+    window.addEventListener(
+      "popstate",
+      () => {
+
+        const match =
+          location.pathname.match(
+            /^\/watch\/([^/]+)$/
+          );
+
+
+        if (match) {
+
+          openVideo(
+            decodeURIComponent(
+              match[1]
+            ),
+            false
+          );
+
+        } else {
+
+          if (
+            !$("videoModal")
+              .classList.contains(
+                "hidden"
+              )
+          ) {
+
+            closeVideo(false);
+
+          }
+
+        }
+
+      }
+    );
+
+
+    const savedName =
+      localStorage.getItem(
+        "videohub_comment_name"
+      );
+
+
+    if (savedName) {
+
+      $("commentName")
+        .value =
+        savedName;
+
+    }
+
+
+    async function init() {
+
+      await loadAdminStatus();
+
+      await loadVideos();
+
+
+      const match =
+        location.pathname.match(
+          /^\/watch\/([^/]+)$/
+        );
+
+
+      if (match) {
+
+        setTimeout(() => {
+
+          openVideo(
+            decodeURIComponent(
+              match[1]
+            ),
+            false
+          );
+
+        }, 100);
+
+      }
+
+    }
+
+
+    init();
+
+  </script>
+
+</body>
+    </html>

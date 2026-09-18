@@ -2962,6 +2962,7 @@ app.get(
             c.id,
             c.video_id,
             c.user_id,
+            c.guest_name,
             c.text,
             c.created_at,
             u.name AS user_name
@@ -2985,6 +2986,7 @@ app.get(
               row.user_id,
             userName:
               row.user_name ||
+              row.guest_name ||
               "User",
             text:
               row.text,
@@ -3480,7 +3482,7 @@ app.put(
 
 app.delete(
   "/api/videos/:id",
-  requireAuth,
+  requireAdmin,
   async (
     req,
     res

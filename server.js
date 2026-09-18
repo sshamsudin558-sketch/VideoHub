@@ -3373,7 +3373,7 @@ app.get(
 
       res.setHeader(
         "Content-Disposition",
-        attachment; filename="${filename}"
+        `attachment; filename="${filename}"`
       );
 
       if (
@@ -4080,12 +4080,14 @@ app.get(
    SPA FALLBACK
 ========================================================= */
 
-app.get(
-  "*",
-  (
-    req,
-    res
-  ) => {
+app.use(
+  (req, res, next) => {
+
+    if (
+      req.path.startsWith("/api/")
+    ) {
+      return next();
+    }
 
     res.sendFile(
       path.join(
@@ -4096,7 +4098,6 @@ app.get(
 
   }
 );
-
 
 /* =========================================================
    ERROR HANDLER

@@ -2962,4 +2962,1213 @@ app.post(
 
 
         await client.query(
+          `UPDATE videos
+          SET likes =
+            likes + 1
+          WHERE id = $1
+          `,
+          [req.params.id]
+        );
+
+        liked = true;
+      }
+
+      const updated = await client.query(
+        `
+        SELECT likes
+        FROM videos
+        WHERE id = $1
+        `,
+        [req.params.id]
+      );
+
+      await client.query(
+        "COMMIT"
+      );
+
+      res.json({
+        success: true,
+        liked,
+        likes: Number(
+          updated.rows[0].likes
+        )
+      });
+
+    } catch (error) {
+
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "LIKE ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to update like."
+        });
+
+    } finally {
+
+      client.release();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   GET COMMENTS
+========================================================= */
+
+app.get(
+  "/api/videos/:id/comments",
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Database is not configured."
+          });
+      }
+
+      if (
+        !isValidId(
+          req.params.id
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid video ID."
+          });
+      }
+
+      const result =
+        await pool.query(
           `
+          SELECT
+            c.id,
+            c.video_id,
+            c.user_id,
+            c.text,
+            c.created_at,
+            u.name AS user_name
+          FROM comments c
+          LEFT JOIN users u
+            ON u.id = c.user_id
+          WHERE c.video_id = $1
+          ORDER BY
+            c.created_at DESC
+          `,
+          [req.params.id]
+        );
+
+      const comments =
+        result.rows.map(
+          (row) => ({
+            id: row.id,
+            videoId:
+              row.video_id,
+            userId:
+              row.user_id,
+            userName:
+              row.user_name ||
+              "User",
+            text:
+              row.text,
+            createdAt:
+              row.created_at
+          })
+        );
+
+      res.json({
+        success: true,
+        comments
+      });
+
+    } catch (error) {
+
+      console.error(
+        "GET COMMENTS ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to load comments."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   ADD COMMENT
+========================================================= */
+
+app.post(
+  "/api/videos/:id/comments",
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Database is not configured."
+          });
+      }
+
+      if (
+        !isValidId(
+          req.params.id
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid video ID."
+          });
+      }
+
+      const text =
+        String(
+          req.body.text || ""
+        )
+          .trim()
+          .slice(
+            0,
+            MAX_COMMENT_LENGTH
+          );
+
+      if (!text) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Comment text is required."
+          });
+      }
+
+      const video =
+        await pool.query(
+          `
+          SELECT id
+          FROM videos
+          WHERE id = $1
+          `,
+          [req.params.id]
+        );
+
+      if (
+        !video.rows.length
+      ) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            error:
+              "Video not found."
+          });
+      }
+
+      const result =
+        await pool.query(
+          `
+          INSERT INTO comments
+          (
+            video_id,
+            user_id,
+            text
+          )
+          VALUES
+          (
+            $1,
+            $2,
+            $3
+          )
+          RETURNING
+            id,
+            video_id,
+            user_id,
+            text,
+            created_at
+          `,
+          [
+            req.params.id,
+            req.user.id,
+            text
+          ]
+        );
+
+      const comment =
+        result.rows[0];
+
+      res
+        .status(201)
+        .json({
+          success: true,
+          comment: {
+            id:
+              comment.id,
+            videoId:
+              comment.video_id,
+            userId:
+              comment.user_id,
+            text:
+              comment.text,
+            createdAt:
+              comment.created_at
+          }
+        });
+
+    } catch (error) {
+
+      console.error(
+        "ADD COMMENT ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to add comment."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   DOWNLOAD VIDEO
+========================================================= */
+
+app.get(
+  "/api/videos/:id/download",
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool || !s3) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Video storage is not configured."
+          });
+      }
+
+      if (
+        !isValidId(
+          req.params.id
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid video ID."
+          });
+      }
+
+      const result =
+        await pool.query(
+          `
+          SELECT *
+          FROM videos
+          WHERE id = $1
+          `,
+          [req.params.id]
+        );
+
+      if (
+        !result.rows.length
+      ) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            error:
+              "Video not found."
+          });
+      }
+
+      const video =
+        result.rows[0];
+
+      const object =
+        await s3.send(
+          new GetObjectCommand({
+            Bucket:
+              S3_BUCKET,
+            Key:
+              video.object_key
+          })
+        );
+
+      await pool.query(
+        `
+        UPDATE videos
+        SET downloads =
+          downloads + 1
+        WHERE id = $1
+        `,
+        [req.params.id]
+      );
+
+      const filename =
+        safeFileName(
+          video.filename ||
+          "video.mp4"
+        );
+
+      res.setHeader(
+        "Content-Type",
+        video.mime_type ||
+        "application/octet-stream"
+      );
+
+      res.setHeader(
+        "Content-Disposition",
+        attachment; filename="${filename}"
+      );
+
+      if (
+        video.size
+      ) {
+        res.setHeader(
+          "Content-Length",
+          String(video.size)
+        );
+      }
+
+      object.Body.pipe(
+        res
+      );
+
+    } catch (error) {
+
+      console.error(
+        "DOWNLOAD ERROR:",
+        error
+      );
+
+      if (
+        !res.headersSent
+      ) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to download video."
+          });
+      } else {
+        res.end();
+      }
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   EDIT VIDEO
+========================================================= */
+
+app.put(
+  "/api/videos/:id",
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Database is not configured."
+          });
+      }
+
+      if (
+        !isValidId(
+          req.params.id
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid video ID."
+          });
+      }
+
+      const title =
+        String(
+          req.body.title || ""
+        )
+          .trim()
+          .slice(
+            0,
+            MAX_TITLE_LENGTH
+          );
+
+      const description =
+        String(
+          req.body.description || ""
+        )
+          .trim()
+          .slice(
+            0,
+            MAX_DESCRIPTION_LENGTH
+          );
+
+      if (!title) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Video title is required."
+          });
+      }
+
+      const existing =
+        await pool.query(
+          `
+          SELECT
+            id,
+            user_id
+          FROM videos
+          WHERE id = $1
+          `,
+          [req.params.id]
+        );
+
+      if (
+        !existing.rows.length
+      ) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            error:
+              "Video not found."
+          });
+      }
+
+      const video =
+        existing.rows[0];
+
+      const isOwner =
+        Number(
+          video.user_id
+        ) === Number(
+          req.user.id
+        );
+
+      const isAdmin =
+        req.user.role ===
+        "admin";
+
+      if (
+        !isOwner &&
+        !isAdmin
+      ) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            error:
+              "You do not have permission to edit this video."
+          });
+      }
+
+      const result =
+        await pool.query(
+          `
+          UPDATE videos
+          SET
+            title = $1,
+            description = $2,
+            updated_at =
+              CURRENT_TIMESTAMP
+          WHERE id = $3
+          RETURNING *
+          `,
+          [
+            title,
+            description,
+            req.params.id
+          ]
+        );
+
+      res.json({
+        success: true,
+        video:
+          formatVideo(
+            result.rows[0]
+          )
+      });
+
+    } catch (error) {
+
+      console.error(
+        "EDIT VIDEO ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to edit video."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   DELETE VIDEO
+========================================================= */
+
+app.delete(
+  "/api/videos/:id",
+  requireAuth,
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool || !s3) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Video storage is not configured."
+          });
+      }
+
+      if (
+        !isValidId(
+          req.params.id
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid video ID."
+          });
+      }
+
+      const result =
+        await pool.query(
+          `
+          SELECT *
+          FROM videos
+          WHERE id = $1
+          `,
+          [req.params.id]
+        );
+
+      if (
+        !result.rows.length
+      ) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            error:
+              "Video not found."
+          });
+      }
+
+      const video =
+        result.rows[0];
+
+      const isOwner =
+        Number(
+          video.user_id
+        ) === Number(
+          req.user.id
+        );
+
+      const isAdmin =
+        req.user.role ===
+        "admin";
+
+      if (
+        !isOwner &&
+        !isAdmin
+      ) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            error:
+              "You do not have permission to delete this video."
+          });
+      }
+
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket:
+            S3_BUCKET,
+          Key:
+            video.object_key
+        })
+      );
+
+      await pool.query(
+        `
+        DELETE FROM videos
+        WHERE id = $1
+        `,
+        [req.params.id]
+      );
+
+      res.json({
+        success: true,
+        message:
+          "Video deleted successfully."
+      });
+
+    } catch (error) {
+
+      console.error(
+        "DELETE VIDEO ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to delete video."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   ADMIN STATISTICS
+========================================================= */
+
+app.get(
+  "/api/admin/stats",
+  requireAdmin,
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Database is not configured."
+          });
+      }
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int
+              AS total_videos,
+
+            COALESCE(
+              SUM(views),
+              0
+            )::bigint
+              AS total_views,
+
+            COALESCE(
+              SUM(likes),
+              0
+            )::bigint
+              AS total_likes,
+
+            COALESCE(
+              SUM(downloads),
+              0
+            )::bigint
+              AS total_downloads,
+
+            COALESCE(
+              SUM(size),
+              0
+            )::bigint
+              AS total_storage
+
+          FROM videos
+          `
+        );
+
+      const users =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int
+              AS total_users
+          FROM users
+          `
+        );
+
+      const revenue =
+        await pool.query(
+          `
+          SELECT
+            COALESCE(
+              SUM(amount),
+              0
+            ) AS total_revenue
+          FROM revenue
+          WHERE status =
+            'paid'
+          `
+        );
+
+      const row =
+        result.rows[0];
+
+      res.json({
+        success: true,
+        stats: {
+          totalVideos:
+            Number(
+              row.total_videos || 0
+            ),
+          totalViews:
+            Number(
+              row.total_views || 0
+            ),
+          totalLikes:
+            Number(
+              row.total_likes || 0
+            ),
+          totalDownloads:
+            Number(
+              row.total_downloads || 0
+            ),
+          totalStorage:
+            Number(
+              row.total_storage || 0
+            ),
+          totalUsers:
+            Number(
+              users.rows[0]
+                .total_users || 0
+            ),
+          totalRevenue:
+            Number(
+              revenue.rows[0]
+                .total_revenue || 0
+            )
+        }
+      });
+
+    } catch (error) {
+
+      console.error(
+        "ADMIN STATS ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to load admin statistics."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   ADMIN USERS
+========================================================= */
+
+app.get(
+  "/api/admin/users",
+  requireAdmin,
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Database is not configured."
+          });
+      }
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            id,
+            name,
+            email,
+            role,
+            created_at
+          FROM users
+          ORDER BY
+            created_at DESC
+          `
+        );
+
+      res.json({
+        success: true,
+        users:
+          result.rows
+      });
+
+    } catch (error) {
+
+      console.error(
+        "ADMIN USERS ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to load users."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   ADMIN REVENUE
+========================================================= */
+
+app.get(
+  "/api/admin/revenue",
+  requireAdmin,
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!pool) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Database is not configured."
+          });
+      }
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            r.id,
+            r.video_id,
+            r.amount,
+            r.source,
+            r.status,
+            r.created_at,
+            v.title
+          FROM revenue r
+          LEFT JOIN videos v
+            ON v.id = r.video_id
+          ORDER BY
+            r.created_at DESC
+          `
+        );
+
+      const total =
+        await pool.query(
+          `
+          SELECT
+            COALESCE(
+              SUM(amount),
+              0
+            ) AS total
+          FROM revenue
+          WHERE status =
+            'paid'
+          `
+        );
+
+      res.json({
+        success: true,
+        totalRevenue:
+          Number(
+            total.rows[0].total || 0
+          ),
+        revenue:
+          result.rows
+      });
+
+    } catch (error) {
+
+      console.error(
+        "ADMIN REVENUE ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to load revenue."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   STORAGE TEST
+========================================================= */
+
+app.get(
+  "/api/admin/storage-test",
+  requireAdmin,
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      if (!s3) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Storage is not configured."
+          });
+      }
+
+      await s3.send(
+        new HeadBucketCommand({
+          Bucket:
+            S3_BUCKET
+        })
+      );
+
+      res.json({
+        success: true,
+        storage:
+          "connected",
+        bucket:
+          S3_BUCKET,
+        region:
+          S3_REGION
+      });
+
+    } catch (error) {
+
+      console.error(
+        "STORAGE TEST ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          storage:
+            "connection failed",
+          error:
+            error.message ||
+            "Storage test failed."
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   SPA FALLBACK
+========================================================= */
+
+app.get(
+  "*",
+  (
+    req,
+    res
+  ) => {
+
+    res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+
+  }
+);
+
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use(
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
+
+    console.error(
+      "UNHANDLED ERROR:",
+      error
+    );
+
+    if (
+      res.headersSent
+    ) {
+      return next(
+        error
+      );
+    }
+
+    res
+      .status(500)
+      .json({
+        success: false,
+        error:
+          "Internal server error."
+      });
+
+  }
+);
+
+
+/* =========================================================
+   START SERVER
+========================================================= */
+
+async function startServer() {
+
+  await initializeDatabase();
+
+  app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+
+      console.log(
+        `VideoHub server running on port ${PORT}`
+      );
+
+    }
+  );
+
+}
+
+startServer()
+  .catch(
+    (error) => {
+
+      console.error(
+        "SERVER START ERROR:",
+        error
+      );
+
+      process.exit(
+        1
+      );
+
+    }
+  );

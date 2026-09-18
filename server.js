@@ -356,10 +356,7 @@ async function initializeDatabase() {
           DEFAULT CURRENT_TIMESTAMP
 
       );
-      await client.query(`
-  ALTER TABLE comments
-  ADD COLUMN IF NOT EXISTS guest_name VARCHAR(120);
-`);
+
 
 
       CREATE INDEX IF NOT EXISTS
@@ -381,6 +378,10 @@ async function initializeDatabase() {
       idx_likes_video
       ON likes(video_id);
 
+    `);
+        await client.query(`
+      ALTER TABLE comments
+      ADD COLUMN IF NOT EXISTS guest_name VARCHAR(120);
     `);
 
 

@@ -3025,7 +3025,7 @@ app.get(
 
 app.post(
   "/api/videos/:id/comments",
-  requireAuth,
+  
   async (
     req,
     res
@@ -3056,6 +3056,24 @@ app.post(
               "Invalid video ID."
           });
       }
+      const guestName =
+  String(
+    req.body.name ||
+    req.body.guestName ||
+    ""
+  )
+    .trim()
+    .slice(0, 120);
+
+if (!guestName) {
+  return res
+    .status(400)
+    .json({
+      success: false,
+      error:
+        "Name is required."
+    });
+}
 
       const text =
         String(
@@ -3103,17 +3121,19 @@ app.post(
         await pool.query(
           `
           INSERT INTO comments
-          (
-            video_id,
-            user_id,
-            text
-          )
-          VALUES
-          (
-            $1,
-            $2,
-            $3
-          )
+(
+  video_id,
+  user_id,
+  guest_name,
+  text
+)
+VALUES
+(
+  $1,
+  NULL,
+  $2,
+  $3
+)
           RETURNING
             id,
             video_id,
@@ -3122,10 +3142,10 @@ app.post(
             created_at
           `,
           [
-            req.params.id,
-            req.user.id,
-            text
-          ]
+  req.params.id,
+  guestName,
+  text
+]
         );
 
       const comment =

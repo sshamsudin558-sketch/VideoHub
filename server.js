@@ -3539,30 +3539,7 @@ app.delete(
       const video =
         result.rows[0];
 
-      const isOwner =
-        Number(
-          video.user_id
-        ) === Number(
-          req.user.id
-        );
-
-      const isAdmin =
-        req.user.role ===
-        "admin";
-
-      if (
-        !isOwner &&
-        !isAdmin
-      ) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            error:
-              "You do not have permission to delete this video."
-          });
-      }
-
+      
       await s3.send(
         new DeleteObjectCommand({
           Bucket:

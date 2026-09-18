@@ -356,6 +356,10 @@ async function initializeDatabase() {
           DEFAULT CURRENT_TIMESTAMP
 
       );
+      await client.query(`
+  ALTER TABLE comments
+  ADD COLUMN IF NOT EXISTS guest_name VARCHAR(120);
+`);
 
 
       CREATE INDEX IF NOT EXISTS
@@ -2718,6 +2722,19 @@ app.post(
     req,
     res
   ) => {
+    if (
+  !isValidId(
+    req.params.id
+  )
+) {
+  return res
+    .status(400)
+    .json({
+      success: false,
+      error:
+        "Invalid video ID."
+    });
+    }
 
     try {
 

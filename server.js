@@ -501,12 +501,8 @@ function makeObjectKey(
       .toString("hex");
 
 
-  return (
-    videos/ +
-    ${Date.now()}- +
-    ${random} +
-    extension
-  );
+  return( 
+    `videos/${Date.now()}-${random}${extension}`;
 
 }
 
@@ -2580,7 +2576,7 @@ app.get(
 
         res.setHeader(
           "Content-Range",
-          bytes */${totalSize}
+          `bytes */${totalSize}`
         );
 
         return res.end();
@@ -2612,7 +2608,7 @@ app.get(
 
         res.setHeader(
           "Content-Range",
-          bytes */${totalSize}
+          `bytes */${totalSize}`
         );
 
         return res.end();
@@ -2646,8 +2642,7 @@ app.get(
             video.object_key,
 
           Range:
-            bytes=${start}-${end}
-
+            `bytes=${start}-${end}`
         });
 
 
@@ -2662,7 +2657,7 @@ app.get(
 
       res.setHeader(
         "Content-Range",
-        bytes ${start}-${end}/${totalSize}
+        `bytes ${start}-${end}/${totalSize}`
       );
 
 

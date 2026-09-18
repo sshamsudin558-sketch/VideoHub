@@ -1,26 +1,59 @@
-# Modern Video Hub
+# VideoHub
 
-A modern self-hosted video upload and streaming website.
+Modern video sharing and streaming platform with user authentication, video upload, streaming, downloads, likes, comments, admin dashboard, PostgreSQL and S3-compatible object storage.
 
-## Run locally
+## Features
 
-1. Install Node.js.
-2. Open this folder in a terminal.
-3. Run:
-   npm install
-   npm start
-4. Open http://localhost:10000
+- User registration and login
+- JWT authentication
+- Admin authentication
+- Video upload
+- Video streaming
+- Video download
+- Video views
+- Likes
+- Comments
+- Video editing
+- Video deletion
+- Admin dashboard
+- User management
+- Revenue tracking
+- Storage connection testing
+- PostgreSQL database
+- S3-compatible object storage
+- Responsive modern UI
 
-## Storage
+## Technology
 
-Uploaded videos are saved in the `uploads` folder.
+- Node.js
+- Express.js
+- PostgreSQL
+- JWT
+- bcrypt
+- AWS SDK for S3-compatible storage
+- HTML
+- CSS
+- JavaScript
 
-For a production deployment, mount persistent storage at the `UPLOAD_DIR` environment variable. A 30 GB capacity requires at least a 30 GB persistent disk. This project does not magically provide 30 GB on a free hosting plan.
+## Environment Variables
 
-## Supported videos
+Configure these environment variables before running the server:
 
-MP4, WebM, OGG, MOV and M4V.
+```env
+PORT=10000
 
-## Important production work
+DATABASE_URL=your_postgresql_connection_string
 
-Before exposing this publicly, add authentication, upload quotas, file validation, rate limiting, virus scanning, HTTPS, and a database for user/video metadata.
+JWT_SECRET=your_secure_jwt_secret
+
+ADMIN_PASSWORD=your_secure_admin_password
+
+S3_ACCESS_KEY_ID=your_storage_access_key
+
+S3_SECRET_ACCESS_KEY=your_storage_secret_key
+
+S3_BUCKET=videohub-storage
+
+S3_REGION=us-west-4
+
+S3_ENDPOINT=https://s3.us-west-4.idrivee2.com

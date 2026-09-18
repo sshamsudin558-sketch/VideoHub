@@ -1154,7 +1154,7 @@
 
             const liked =
               localStorage.getItem(
-                videohub_liked_${id}
+                `videohub_liked_${id}`
               ) === "1";
 
 
@@ -1663,7 +1663,7 @@
 
 
         const storageKey =
-          videohub_liked_${id};
+          `videohub_liked_${id}`;
 
 
         /*
@@ -2772,7 +2772,7 @@
 
               $("progressBarFill")
                 .style.width =
-                ${percent}%;
+                `${percent}%`;
 
 
               $("uploadedAmount")
@@ -2816,7 +2816,7 @@
 
                 reject(
                   new Error(
-                    Storage upload failed (${xhr.status}).
+                    `Storage upload failed (${xhr.status}).`
                   )
                 );
 

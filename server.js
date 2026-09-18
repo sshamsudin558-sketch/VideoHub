@@ -2815,195 +2815,76 @@ app.post(
 
 app.post(
   "/api/videos/:id/like",
-  requireAuth,
   async (
     req,
     res
   ) => {
 
-    if (!pool) {
-
-      return res
-        .status(500)
-        .json({
-
-          success:
-            false,
-
-          error:
-            "Database is not configured."
-
-        });
-
-    }
-
-
-    const client =
-      await pool.connect();
-
-
     try {
 
-      await client.query(
-        "BEGIN"
-      );
-
-
-      const video =
-        await client.query(
-          `
-          SELECT
-            id,
-            likes
-          FROM videos
-          WHERE id = $1
-          FOR UPDATE
-          `,
-          [req.params.id]
-        );
-
-
-      if (
-        !video.rows.length
-      ) {
-
-        await client.query(
-          "ROLLBACK"
-        );
-
-
+      if (!pool) {
         return res
-          .status(404)
+          .status(500)
           .json({
-
-            success:
-              false,
-
+            success: false,
             error:
-              "Video not found."
-
+              "Database is not configured."
           });
-
       }
 
-
-      const existing =
-        await client.query(
-          `
-          SELECT id
-          FROM likes
-          WHERE video_id = $1
-          AND user_id = $2
-          `,
-          [
-            req.params.id,
-            req.user.id
-          ]
-        );
-
-
-      let liked;
-
-
       if (
-        existing.rows.length
+        !isValidId(
+          req.params.id
+        )
       ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid video ID."
+          });
+      }
 
-        await client.query(
-          `
-          DELETE FROM likes
-          WHERE video_id = $1
-          AND user_id = $2
-          `,
-          [
-            req.params.id,
-            req.user.id
-          ]
-        );
-
-
-        await client.query(
+      const result =
+        await pool.query(
           `
           UPDATE videos
           SET likes =
-            GREATEST(
-              likes - 1,
-              0
-            )
-          WHERE id = $1
-          `,
-          [req.params.id]
-        );
-
-
-        liked =
-          false;
-
-      } else {
-
-        await client.query(
-          `
-          INSERT INTO likes
-          (
-            video_id,
-            user_id
-          )
-          VALUES
-          (
-            $1,
-            $2
-          )
-          `,
-          [
-            req.params.id,
-            req.user.id
-          ]
-        );
-
-
-        await client.query(
-          `UPDATE videos
-          SET likes =
             likes + 1
           WHERE id = $1
+          RETURNING
+            id,
+            likes
           `,
           [req.params.id]
         );
 
-        liked = true;
+      if (
+        !result.rows.length
+      ) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            error:
+              "Video not found."
+          });
       }
-
-      const updated = await client.query(
-        `
-        SELECT likes
-        FROM videos
-        WHERE id = $1
-        `,
-        [req.params.id]
-      );
-
-      await client.query(
-        "COMMIT"
-      );
 
       res.json({
         success: true,
-        liked,
-        likes: Number(
-          updated.rows[0].likes
-        )
+        liked: true,
+        likes:
+          Number(
+            result.rows[0].likes
+          )
       });
 
     } catch (error) {
 
-      try {
-        await client.query(
-          "ROLLBACK"
-        );
-      } catch {}
-
       console.error(
-        "LIKE ERROR:",
+        "LIKE VIDEO ERROR:",
         error
       );
 
@@ -3012,12 +2893,8 @@ app.post(
         .json({
           success: false,
           error:
-            "Unable to update like."
+            "Unable to like video."
         });
-
-    } finally {
-
-      client.release();
 
     }
 

@@ -47,12 +47,10 @@ const DATABASE_URL =
   process.env.DATABASE_URL || "";
 
 const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "CHANGE_THIS_VIDEOHUB_SECRET";
+  process.env.JWT_SECRET;
 
 const ADMIN_PASSWORD =
-  process.env.ADMIN_PASSWORD ||
-  "CHANGE_THIS_ADMIN_PASSWORD";
+  process.env.ADMIN_PASSWORD;
 
 
 /* =========================================================
@@ -309,6 +307,7 @@ async function initializeDatabase() {
           ON DELETE SET NULL,
 
         text TEXT NOT NULL,
+        guest_name VARCHAR(120),
 
         created_at TIMESTAMP
           DEFAULT CURRENT_TIMESTAMP

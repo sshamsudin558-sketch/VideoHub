@@ -753,14 +753,14 @@
 
     function getVideoStreamUrl(id) {
 
-      return /api/videos/${encodeURIComponent(id)}/stream;
+      return `/api/videos/${encodeURIComponent(id)}/stream`;
 
     }
 
 
     function getVideoDownloadUrl(id) {
 
-      return /api/videos/${encodeURIComponent(id)}/download;
+      `return /api/videos/${encodeURIComponent(id)}/download`;
 
     }
 
@@ -847,7 +847,7 @@
       if (state.adminToken) {
 
         headers.Authorization =
-          Bearer ${state.adminToken};
+          `Bearer ${state.adminToken}`;
 
       }
 

@@ -501,8 +501,8 @@ function makeObjectKey(
       .toString("hex");
 
 
-  return 
-    `videos/${Date.now()}-${random}${extension}`;
+  return `videos/${Date.now()}-${random}${extension}`;
+    
 
 }
 
@@ -1566,7 +1566,7 @@ app.post(
 
 app.post(
   "/api/upload/presign",
-  requireAuth,
+  requireAdmin,
   async (
     req,
     res
@@ -1777,7 +1777,7 @@ app.post(
 
 app.post(
   "/api/upload/complete",
-  requireAuth,
+  requireAdmin,
   async (
     req,
     res
@@ -3422,7 +3422,7 @@ app.get(
 
 app.put(
   "/api/videos/:id",
-  requireAuth,
+  requireAdmin,
   async (
     req,
     res
@@ -3511,29 +3511,7 @@ app.put(
       const video =
         existing.rows[0];
 
-      const isOwner =
-        Number(
-          video.user_id
-        ) === Number(
-          req.user.id
-        );
 
-      const isAdmin =
-        req.user.role ===
-        "admin";
-
-      if (
-        !isOwner &&
-        !isAdmin
-      ) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            error:
-              "You do not have permission to edit this video."
-          });
-      }
 
       const result =
         await pool.query(
